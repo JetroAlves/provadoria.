@@ -14,14 +14,20 @@ export const config = {
 export default async function handler(req: any, res: any) {
     try {
         if (req.method !== 'POST') {
-            return res.status(405).json({ error: 'Method not allowed' });
+            return res.status(405).json({
+                success: false,
+                error: 'Method not allowed'
+            });
         }
 
         const { prompt, images, aspectRatio, useProModel } = req.body;
         const authHeader = req.headers.authorization;
 
         if (!authHeader) {
-            return res.status(401).json({ error: 'Unauthorized: Missing token' });
+            return res.status(401).json({
+                success: false,
+                error: 'Unauthorized: Missing token'
+            });
         }
 
         const token = authHeader.split(' ')[1];
@@ -32,18 +38,27 @@ export default async function handler(req: any, res: any) {
 
         if (authError || !user) {
             console.error('Auth Error:', authError);
-            return res.status(401).json({ error: 'Unauthorized: Invalid token' });
+            return res.status(401).json({
+                success: false,
+                error: 'Unauthorized: Invalid token'
+            });
         }
 
         const result = await generateImage(user.id, prompt, images, aspectRatio, useProModel);
-        return res.status(200).json(result);
+
+        return res.status(200).json({
+            success: true,
+            data: result
+        });
 
     } catch (error: any) {
-        console.error('CRITICAL API ERROR:', error);
-        // Garantir que sempre retornamos JSON
-        return res.status(500).json({
-            error: error.message || 'Internal Server Error',
-            details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        console.error("Gemini API error (Image):", error);
+
+        const statusCode = error.message.includes('Créditos insuficientes') ? 403 : 500;
+
+        return res.status(statusCode).json({
+            success: false,
+            error: error.message || "Internal server error"
         });
     }
 }
