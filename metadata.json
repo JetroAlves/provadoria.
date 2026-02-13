@@ -1,0 +1,7 @@
+{
+  "name": "Provadoria",
+  "description": "Uma plataforma avançada de moda com IA para lojistas, oferecendo stylist inteligente, provador virtual e estúdio criativo automatizado.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
