@@ -26,13 +26,13 @@ const COSTS = {
 const UsageController = {
   async validateAndAuthorize(userId: string, feature: keyof typeof COSTS) {
     // 1. Buscar assinatura e plano do usuário
-    const { data: sub, error } = await supabase
+    const { data: sub, error: subError } = await supabase
       .from('user_subscriptions')
       .select('*, plans(*)')
       .eq('user_id', userId)
       .single();
 
-    if (error || !sub) throw new Error("Assinatura não encontrada. Contate o suporte.");
+    if (subError || !sub) throw new Error("Assinatura não encontrada. Contate o suporte.");
 
     const cost = COSTS[feature];
     const plan = sub.plans;
@@ -42,40 +42,35 @@ const UsageController = {
       throw new Error(`Seu plano ${plan.name} não permite geração de vídeo. Faça upgrade.`);
     }
 
-    // 3. Verificar limites específicos (Vídeos por mês)
-    if (feature === 'video' && sub.videos_used_this_month >= plan.video_limit) {
-      throw new Error(`Limite mensal de vídeos atingido (${plan.video_limit}).`);
-    }
+    // 3. Verificar limites específicos (Vídeos por mês - se a coluna existir no plano/assinatura, mantemos a lógica, mas removendo a dependência de colunas deletadas se não especificado. O prompt pediu para manter validação de "video allowance", mas pediu para remover "videos_used_this_month" se não existir. Vou assumir que a verificação de limite de vídeo depende dessa coluna, mas se ela não existe mais, não tem como verificar. O prompt diz: "Remove ALL references to videos_used_this_month". Então removo a validação de limite mensal de vídeos baseada nessa coluna.)
 
-    // 4. Verificar saldo de créditos
-    if (sub.current_credits < cost) {
-      throw new Error(`Créditos insuficientes. Custo: ${cost}, Disponível: ${sub.current_credits}.`);
+    // 4. Verificar saldo de créditos na tabela user_credits (Walle)
+    const { data: credits } = await supabase
+      .from('user_credits')
+      .select('balance')
+      .eq('user_id', userId)
+      .single();
+
+    if (!credits || credits.balance < cost) {
+      throw new Error(`Créditos insuficientes. Custo: ${cost}, Disponível: ${credits?.balance || 0}.`);
     }
 
     return { sub, cost };
   },
 
   async deductCredits(userId: string, feature: keyof typeof COSTS, cost: number) {
-    // Deduz créditos via RPC ou update direto
-    const { data: currentSub } = await supabase.from('user_subscriptions').select('current_credits, videos_used_this_month').eq('user_id', userId).single();
-
-    if (!currentSub) return;
-
-    const newBalance = Math.max(0, currentSub.current_credits - cost);
-    const updatePayload: any = { current_credits: newBalance };
-
-    if (feature === 'video') {
-      updatePayload.videos_used_this_month = (currentSub.videos_used_this_month || 0) + 1;
-    }
-
-    await supabase.from('user_subscriptions').update(updatePayload).eq('user_id', userId);
-
-    // Log da transação
-    await supabase.from('credit_transactions').insert({
-      user_id: userId,
-      amount: -cost,
-      feature_type: feature
+    // Deduz créditos via RPC atômico
+    const { error } = await supabase.rpc('deduct_credits', {
+      p_user_id: userId,
+      p_amount: cost,
+      p_feature: feature
     });
+
+    if (error) {
+      console.error("Erro ao deduzir créditos:", error);
+      // Não lançamos erro aqui para não falhar a request se a geração já ocorreu, 
+      // mas idealmente deveria ser transacional. Como o generate já foi feito, apenas logamos.
+    }
   }
 };
 
