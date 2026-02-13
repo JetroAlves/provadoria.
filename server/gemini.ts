@@ -5,12 +5,12 @@ import { supabase } from "../lib/supabase-server"; // Acesso administrativo para
 // A API Key deve vir de variáveis de ambiente seguras no servidor
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || process.env.API_KEY });
 
-// Mapeamento de modelos
+// Mapeamento de modelos reais e estáveis
 const MODELS = {
-  text: 'gemini-3-flash-preview',
-  image: 'gemini-2.5-flash-image',
-  imageHighQuality: 'gemini-3-pro-image-preview',
-  video: 'veo-3.1-fast-generate-preview'
+  text: 'gemini-2.0-flash',
+  image: 'imagen-3',
+  imageHighQuality: 'imagen-3',
+  video: 'veo-2' // Ou modelo de vídeo disponível
 };
 
 // --- CONFIGURAÇÃO DE CUSTOS E LIMITES ---
