@@ -1,5 +1,5 @@
 
-import { generateImage } from '../server/gemini';
+import { generateImage } from '../server/gemini.js';
 import { getSupabaseServer } from '../lib/supabase-server';
 
 // Aumentar limite de tamanho do corpo da requisição para imagens
