@@ -23,12 +23,14 @@ const apiCall = async (endpoint: string, body: any) => {
     body: JSON.stringify(body)
   });
 
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error || 'Erro na requisição');
+  const json = await response.json();
+
+  if (!response.ok || json.success === false) {
+    throw new Error(json.error || 'Erro na requisição');
   }
 
-  return await response.json();
+  // Retorna apenas a parte de dados para o frontend, mantendo compatibilidade
+  return json.data;
 };
 
 export const apiService = {
