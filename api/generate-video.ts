@@ -1,6 +1,6 @@
 
 import { generateVideo } from '../server/gemini.js';
-import { getSupabaseServer } from '../lib/supabase-server';
+import { getSupabaseServer } from '../lib/supabase-server.js';
 
 // Aumentar limite para upload inicial de imagem
 export const config = {

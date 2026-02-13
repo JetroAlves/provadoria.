@@ -1,6 +1,6 @@
 
 import { generateImage } from '../server/gemini.js';
-import { getSupabaseServer } from '../lib/supabase-server';
+import { getSupabaseServer } from '../lib/supabase-server.js';
 
 // Aumentar limite de tamanho do corpo da requisição para imagens
 export const config = {

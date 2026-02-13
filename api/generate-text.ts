@@ -1,6 +1,6 @@
 
-import { generateText } from '../server/gemini';
-import { getSupabaseServer } from '../lib/supabase-server';
+import { generateText } from '../server/gemini.js';
+import { getSupabaseServer } from '../lib/supabase-server.js';
 
 export default async function handler(req: any, res: any) {
     try {

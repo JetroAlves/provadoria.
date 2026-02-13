@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { getSupabaseServer } from "../lib/supabase-server"; // Acesso administrativo seguro
+import { getSupabaseServer } from "../lib/supabase-server.js"; // Acesso administrativo seguro
 
 // A API Key deve vir de variáveis de ambiente seguras no servidor
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || process.env.API_KEY });
