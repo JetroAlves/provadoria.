@@ -206,17 +206,8 @@ export const generateVideo = async (userId: string, prompt: string, image?: { da
   const videoResponse = await fetch(`${videoUri}&key=${process.env.GEMINI_API_KEY || process.env.API_KEY}`);
   const videoBlob = await videoResponse.blob();
 
-  const base64Video = await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const result = reader.result as string;
-      // Remove o prefixo data:video/mp4;base64,
-      const base64 = result.split(',')[1];
-      resolve(base64);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(videoBlob);
-  });
+  const videoArrayBuffer = await videoResponse.arrayBuffer();
+  const base64Video = Buffer.from(videoArrayBuffer).toString('base64');
 
   // Dedução após sucesso
   await UsageController.deductCredits(userId, 'video', cost);
