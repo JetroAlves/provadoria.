@@ -1,10 +1,4 @@
 {
-    "rewrites": [
-        {
-            "source": "/api/:path*",
-            "destination": "/api/:path*"
-        }
-    ],
     "functions": {
         "api/generate-image.ts": {
             "maxDuration": 60

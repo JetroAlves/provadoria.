@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { supabase } from "../lib/supabase-server"; // Acesso administrativo para dedução de créditos
+import { getSupabaseServer } from "../lib/supabase-server"; // Acesso administrativo seguro
 
 // A API Key deve vir de variáveis de ambiente seguras no servidor
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || process.env.API_KEY });
@@ -25,6 +25,7 @@ const COSTS = {
 // Helper para validar e deduzir créditos
 const UsageController = {
   async validateAndAuthorize(userId: string, feature: keyof typeof COSTS) {
+    const supabase = getSupabaseServer();
     // 1. Buscar assinatura e plano do usuário
     const { data: sub, error: subError } = await supabase
       .from('user_subscriptions')
@@ -59,6 +60,7 @@ const UsageController = {
   },
 
   async deductCredits(userId: string, feature: keyof typeof COSTS, cost: number) {
+    const supabase = getSupabaseServer();
     // Deduz créditos via RPC atômico
     const { error } = await supabase.rpc('deduct_credits', {
       p_user_id: userId,

@@ -1,6 +1,6 @@
 
 import { generateText } from '../server/gemini';
-import { supabase } from '../lib/supabase-server';
+import { getSupabaseServer } from '../lib/supabase-server';
 
 export default async function handler(req: any, res: any) {
     try {
@@ -16,6 +16,7 @@ export default async function handler(req: any, res: any) {
         }
 
         const token = authHeader.split(' ')[1];
+        const supabase = getSupabaseServer();
         const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
         if (authError || !user) {
