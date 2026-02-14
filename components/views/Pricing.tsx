@@ -1,6 +1,8 @@
 
 import React from 'react';
-import { Check, Sparkles, Zap, Crown, Info } from 'lucide-react';
+import { Check, Sparkles, Zap, Crown, Info, Loader2 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../lib/supabase';
 import { useSettings } from '../../context/SettingsContext';
 
 const PLANS = [
@@ -66,11 +68,62 @@ const CREDIT_COSTS = [
 ];
 
 const Pricing: React.FC = () => {
+  const { user } = useAuth();
+  const [loadingPlan, setLoadingPlan] = React.useState<string | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
+
   // Simulação do plano atual (no futuro virá do contexto/backend)
-  const currentPlanId = 'starter'; 
+  const currentPlanId = 'starter';
+
+  const handleSubscribe = async (planId: string) => {
+    if (!user) return;
+
+    setLoadingPlan(planId);
+    setError(null);
+
+    try {
+      // Obter sessão atual para o token
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        throw new Error('Sessão expirada. Faça login novamente.');
+      }
+
+      const response = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ planId })
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error || 'Erro ao criar sessão de checkout');
+      }
+
+      // Redirecionar para o Stripe
+      window.location.href = data.checkoutUrl;
+
+    } catch (err: any) {
+      console.error('Erro na assinatura:', err);
+      setError(err.message || 'Erro ao processar assinatura. Tente novamente.');
+    } finally {
+      setLoadingPlan(null);
+    }
+  };
 
   return (
     <div className="space-y-12 animate-in fade-in duration-700">
+      {error && (
+        <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-center gap-3 max-w-2xl mx-auto">
+          <Info className="text-rose-500 shrink-0" size={18} />
+          <p className="text-xs font-bold text-rose-800 uppercase tracking-tight">{error}</p>
+        </div>
+      )}
+
       <div className="text-center max-w-2xl mx-auto space-y-4">
         <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase">Escolha sua Evolução</h2>
         <p className="text-slate-500 text-lg font-medium">Desbloqueie o potencial criativo da sua marca com planos flexíveis baseados em uso.</p>
@@ -79,15 +132,15 @@ const Pricing: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
         {PLANS.map((plan) => {
           const isCurrent = currentPlanId === plan.id;
-          
+          const isLoading = loadingPlan === plan.id;
+
           return (
-            <div 
+            <div
               key={plan.id}
-              className={`relative bg-white rounded-[2.5rem] p-8 flex flex-col h-full transition-all duration-300 ${
-                plan.highlight 
-                  ? 'border-2 border-black shadow-2xl scale-105 z-10' 
-                  : 'border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1'
-              }`}
+              className={`relative bg-white rounded-[2.5rem] p-8 flex flex-col h-full transition-all duration-300 ${plan.highlight
+                ? 'border-2 border-black shadow-2xl scale-105 z-10'
+                : 'border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1'
+                }`}
             >
               {plan.highlight && (
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[#E11D48] text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg flex items-center gap-2">
@@ -116,16 +169,17 @@ const Pricing: React.FC = () => {
               </div>
 
               <button
-                disabled={isCurrent}
-                className={`w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-lg active:scale-95 ${
-                  isCurrent 
-                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none' 
-                    : plan.highlight 
-                      ? 'bg-[#E11D48] text-white hover:bg-rose-700 hover:shadow-rose-200' 
-                      : 'bg-black text-white hover:bg-slate-800'
-                }`}
+                disabled={isCurrent || isLoading}
+                onClick={() => plan.id === 'business' ? window.open('https://wa.me/seu-numero', '_blank') : handleSubscribe(plan.id)}
+                className={`w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 ${isCurrent
+                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
+                  : plan.highlight
+                    ? 'bg-[#E11D48] text-white hover:bg-rose-700 hover:shadow-rose-200'
+                    : 'bg-black text-white hover:bg-slate-800'
+                  }`}
               >
-                {isCurrent ? 'Seu Plano Atual' : plan.cta}
+                {isLoading && <Loader2 className="animate-spin" size={16} />}
+                {isCurrent ? 'Seu Plano Atual' : (isLoading ? 'Processando...' : plan.cta)}
               </button>
             </div>
           );
