@@ -112,7 +112,9 @@ export default async function handler(req: any, res: any) {
                 // Extração hiper-resiliente de ID de Assinatura
                 const subscriptionId = invoice.subscription ||
                     invoice.subscription_details?.subscription ||
-                    invoice.lines?.data[0]?.subscription;
+                    invoice.parent?.subscription_details?.subscription ||
+                    invoice.lines?.data[0]?.subscription ||
+                    invoice.lines?.data[0]?.parent?.subscription_item_details?.subscription;
 
                 // Extração hiper-resiliente de ID de Preço
                 const firstLine = invoice.lines?.data[0];
