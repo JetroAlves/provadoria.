@@ -70,18 +70,19 @@ export default async function handler(req: any, res: any) {
 
                 if (userId && planId) {
                     console.log(`Linking userID ${userId} to plan ${planId} with subscription ${subscriptionId}`);
-                    const { error } = await supabase
+                    // 3. Atualizar ou criar assinatura
+                    const { error: upsertSubError } = await supabase
                         .from('user_subscriptions')
                         .upsert({
                             user_id: userId,
-                            plan_id: planId,
+                            stripe_customer_id: session.customer as string,
                             stripe_subscription_id: subscriptionId,
-                            status: 'active',
-                            updated_at: new Date().toISOString()
+                            plan_id: planId,
+                            status: 'active'
                         }, { onConflict: 'user_id' });
 
-                    if (error) {
-                        console.error('CRITICAL: Error updating user_subscriptions:', error);
+                    if (upsertSubError) {
+                        console.error('CRITICAL: Error updating user_subscriptions:', upsertSubError);
                         // Tentar insert se upsert falhar em ambientes sem constraint
                         const { error: insertError } = await supabase
                             .from('user_subscriptions')
@@ -89,8 +90,7 @@ export default async function handler(req: any, res: any) {
                                 user_id: userId,
                                 plan_id: planId,
                                 stripe_subscription_id: subscriptionId,
-                                status: 'active',
-                                updated_at: new Date().toISOString()
+                                status: 'active'
                             });
                         if (insertError) console.error('Final attempt failed:', insertError);
                     }
@@ -106,11 +106,14 @@ export default async function handler(req: any, res: any) {
 
                 if (!subscriptionId || !priceId) break;
 
-                // 1. Buscar o planId correspondente ao priceId na tabela plans
-                const { data: plan, error: planError } = await supabase
+                // 1. Buscar o plano no banco pelo stripe_price_id ou metadata
+                // Primeiro tentamos pelo ID do metadado se existir
+                const planIdQuery = event.data.object.metadata?.planId;
+
+                let { data: plan, error: planError } = await supabase
                     .from('plans')
                     .select('id, monthly_credits')
-                    .eq('stripe_price_id', priceId)
+                    .or(`stripe_price_id.eq.${priceId}${planIdQuery ? `,id.eq.${planIdQuery}` : ''}`)
                     .single();
 
                 if (planError || !plan) {
@@ -159,8 +162,7 @@ export default async function handler(req: any, res: any) {
                         user_id: userId,
                         plan_id: plan.id,
                         stripe_subscription_id: subscriptionId,
-                        status: 'active',
-                        updated_at: new Date().toISOString()
+                        status: 'active'
                     }, { onConflict: 'user_id' });
 
                 if (upsertSubError) {
@@ -182,14 +184,14 @@ export default async function handler(req: any, res: any) {
                     .maybeSingle();
 
                 const currentBalance = currentCredits?.balance || 0;
-                const newBalance = currentBalance + plan.monthly_credits;
+                const creditsToAdd = plan.monthly_credits || (plan as any).credits || 0;
+                const newBalance = currentBalance + creditsToAdd;
 
                 const { error: creditError } = await supabase
                     .from('user_credits')
                     .upsert({
                         user_id: userId,
-                        balance: newBalance,
-                        updated_at: new Date().toISOString()
+                        balance: newBalance
                     }, { onConflict: 'user_id' });
 
                 if (creditError) {
@@ -198,11 +200,12 @@ export default async function handler(req: any, res: any) {
                 }
 
                 // 6. Registrar transação
+                const creditsAllocated = plan.monthly_credits || (plan as any).credits || 0;
                 const { error: transError } = await supabase
                     .from('credit_transactions')
                     .insert({
                         user_id: userId,
-                        amount: plan.monthly_credits,
+                        amount: creditsAllocated,
                         type: 'monthly_allocation',
                         description: `Créditos mensais do plano: ${plan.id}`
                     });
@@ -219,7 +222,7 @@ export default async function handler(req: any, res: any) {
                 const subscription = event.data.object as Stripe.Subscription;
                 const { error } = await supabase
                     .from('user_subscriptions')
-                    .update({ status: 'canceled', updated_at: new Date().toISOString() })
+                    .update({ status: 'canceled' })
                     .eq('stripe_subscription_id', subscription.id);
 
                 if (error) {
