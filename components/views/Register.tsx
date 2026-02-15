@@ -67,10 +67,11 @@ const Register: React.FC = () => {
     try {
       await register(formData.email, formData.password, formData.brandName, formData.fullName);
 
-      // Obter o usuário recém-criado/logado
       const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Não foi possível iniciar sessão após o cadastro.");
 
-      if (session && planId !== 'free') {
+      // Se o plano NÃO for free, tenta iniciar checkout
+      if (planId !== 'free') {
         try {
           const response = await fetch('/api/create-checkout-session', {
             method: 'POST',
@@ -83,27 +84,29 @@ const Register: React.FC = () => {
 
           const data = await response.json();
           if (data.success && data.checkoutUrl) {
+            // REDIRECIONAR E ENCERRAR
             window.location.href = data.checkoutUrl;
             return;
           }
+          console.warn("Falha ao criar sessão de checkout, caindo para plano free:", data.error);
         } catch (checkoutErr) {
-          console.error("Erro ao iniciar checkout, caindo para plano free:", checkoutErr);
+          console.error("Erro na comunicação com a API de checkout:", checkoutErr);
         }
       }
 
-      // Se for free ou se o checkout falhar, criar assinatura free manualmente
-      if (session) {
-        await supabase.from('user_subscriptions').upsert({
-          user_id: session.user.id,
-          plan_id: 'free',
-          status: 'active',
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'user_id' });
-      }
+      // Se for plano free OU se a criação da sessão de checkout falhou
+      // Cria a assinatura 'free' como fallback garantido
+      await supabase.from('user_subscriptions').upsert({
+        user_id: session.user.id,
+        plan_id: 'free',
+        status: 'active',
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id' });
 
       setSuccess(true);
       setTimeout(() => navigate(AppRoute.DASHBOARD), 1500);
     } catch (err: any) {
+      console.error('Erro no cadastro:', err);
       setError(err.message || 'Houve um erro no cadastro. Tente outro e-mail.');
     } finally {
       setIsSubmitting(false);

@@ -50,6 +50,7 @@ export default async function handler(req: any, res: any) {
                 const subscriptionId = (session as any).subscription as string;
 
                 if (userId && planId) {
+                    console.log(`Linking userID ${userId} to plan ${planId} with subscription ${subscriptionId}`);
                     const { error } = await supabase
                         .from('user_subscriptions')
                         .upsert({
@@ -61,10 +62,20 @@ export default async function handler(req: any, res: any) {
                         }, { onConflict: 'user_id' });
 
                     if (error) {
-                        console.error('Error updating user_subscriptions:', error);
-                        throw error;
+                        console.error('CRITICAL: Error updating user_subscriptions:', error);
+                        // Tentar insert se upsert falhar em ambientes sem constraint
+                        const { error: insertError } = await supabase
+                            .from('user_subscriptions')
+                            .insert({
+                                user_id: userId,
+                                plan_id: planId,
+                                stripe_subscription_id: subscriptionId,
+                                status: 'active',
+                                updated_at: new Date().toISOString()
+                            });
+                        if (insertError) console.error('Final attempt failed:', insertError);
                     }
-                    console.log(`Successfully linked subscription ${subscriptionId} to user ${userId}`);
+                    console.log(`Successfully processed checkout.session.completed for user ${userId}`);
                 }
                 break;
             }

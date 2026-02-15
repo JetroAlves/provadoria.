@@ -27,14 +27,17 @@ const Dashboard: React.FC = () => {
             .select('*, plans(name)')
             .eq('user_id', user.id)
             .eq('status', 'active')
-            .maybeSingle(),
+            .order('updated_at', { ascending: false })
+            .limit(1),
           supabase.from('user_credits')
             .select('balance')
             .eq('user_id', user.id)
             .maybeSingle()
         ]);
 
-        if (subRes.data) setSubscription(subRes.data);
+        if (subRes.data && subRes.data.length > 0) {
+          setSubscription(subRes.data[0]);
+        }
         if (credRes.data) setCredits(credRes.data.balance);
       } catch (err) {
         console.error("Erro ao carregar créditos no dashboard:", err);
@@ -56,7 +59,9 @@ const Dashboard: React.FC = () => {
         <div>
           <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-1">Status da Assinatura</h2>
           <div className="flex items-center gap-3">
-            <p className="text-2xl font-black text-slate-900 tracking-tighter uppercase italic">{subscription?.plans?.name || 'Carregando...'}</p>
+            <p className="text-2xl font-black text-slate-900 tracking-tighter uppercase italic">
+              {subscription?.plans?.name || (subscription?.plan_id ? (subscription.plan_id.charAt(0).toUpperCase() + subscription.plan_id.slice(1)) : 'Carregando...')}
+            </p>
             <span className="px-3 py-1 bg-emerald-100 text-emerald-600 text-[8px] font-black uppercase tracking-widest rounded-full">Ativa</span>
           </div>
         </div>
