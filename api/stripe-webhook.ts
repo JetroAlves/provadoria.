@@ -31,16 +31,35 @@ export default async function handler(req: any, res: any) {
 
     try {
         const rawBody = await getRawBody(req);
+
+        if (!rawBody || rawBody.length === 0) {
+            console.error('Webhook Error: Empty body received');
+            return res.status(400).json({ success: false, error: 'Empty body' });
+        }
+
         event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
     } catch (err: any) {
         console.error(`Webhook Signature Validation Error: ${err.message}`);
-        return res.status(400).send(`Webhook Error: ${err.message}`);
+        return res.status(400).json({
+            success: false,
+            error: `Stripe Signature Error: ${err.message}`,
+            hint: 'Verifique se a STRIPE_WEBHOOK_SECRET na Vercel bate com a do painel do Stripe para este endpoint especifico.',
+            secret_preview: webhookSecret ? `${webhookSecret.substring(0, 8)}...${webhookSecret.substring(webhookSecret.length - 4)}` : 'missing',
+            received_signature: `${sig.substring(0, 10)}...`
+        });
     }
 
     const supabase = getSupabaseServer();
 
     try {
         console.log(`Processing Stripe event: ${event.type} [${event.id}]`);
+
+        // Logs extras no response para debug no painel do Stripe
+        const debugInfo = {
+            type: event.type,
+            eventId: event.id,
+            timestamp: new Date().toISOString()
+        };
 
         switch (event.type) {
             case 'checkout.session.completed': {
@@ -99,40 +118,68 @@ export default async function handler(req: any, res: any) {
                     break;
                 }
 
-                // 2. Buscar o userId associado a esta assinatura
-                const { data: sub, error: subError } = await supabase
+                // 2. Buscar o userId associado a esta assinatura em nosso banco
+                let { data: sub, error: subError } = await supabase
                     .from('user_subscriptions')
                     .select('user_id')
                     .eq('stripe_subscription_id', subscriptionId)
-                    .single();
+                    .maybeSingle();
 
-                if (subError || !sub) {
-                    // Se não encontrar, tenta buscar pelo checkout session (fallback)
-                    // Ou talvez a assinatura ainda não tenha sido criada no checkout.session.completed
-                    console.error('Subscription not found for subscriptionId:', subscriptionId, subError);
+                let userId = sub?.user_id;
+
+                // 3. FALLBACK CRÍTICO: Se não acharmos o userId no banco, buscamos a assinatura no Stripe
+                // para ver se o userId está no metadados
+                if (!userId) {
+                    console.log(`User ID not found in DB for sub ${subscriptionId}. Fetching from Stripe...`);
+                    try {
+                        const stripeSub = await stripe.subscriptions.retrieve(subscriptionId);
+                        userId = stripeSub.metadata?.userId || stripeSub.metadata?.user_id;
+
+                        if (!userId) {
+                            // Tenta buscar no Checkout Session se não estiver na assinatura
+                            const sessions = await stripe.checkout.sessions.list({ subscription: subscriptionId });
+                            if (sessions.data.length > 0) {
+                                userId = sessions.data[0].client_reference_id || sessions.data[0].metadata?.userId;
+                            }
+                        }
+                    } catch (stripeErr) {
+                        console.error('Error fetching subscription from Stripe:', stripeErr);
+                    }
+                }
+
+                if (!userId) {
+                    console.error('CRITICAL: Could not determine userId for subscription:', subscriptionId);
                     break;
                 }
 
-                // 3. Atualizar assinatura com o novo planId (em caso de upgrade/downgrade) e status active
-                const { error: updateSubError } = await supabase
+                // 4. Garantir que a assinatura exista no banco (upsert resiliente)
+                const { error: upsertSubError } = await supabase
                     .from('user_subscriptions')
-                    .update({
+                    .upsert({
+                        user_id: userId,
                         plan_id: plan.id,
+                        stripe_subscription_id: subscriptionId,
                         status: 'active',
                         updated_at: new Date().toISOString()
-                    })
-                    .eq('stripe_subscription_id', subscriptionId);
+                    }, { onConflict: 'user_id' });
 
-                if (updateSubError) {
-                    console.error('Error updating user_subscriptions on invoice.paid:', updateSubError);
+                if (upsertSubError) {
+                    console.error('Error ensuring user_subscriptions on invoice.paid:', upsertSubError);
+                    // Tentativa de insert simples se o upsert falhar por motivos de constraint
+                    await supabase.from('user_subscriptions').insert({
+                        user_id: userId,
+                        plan_id: plan.id,
+                        stripe_subscription_id: subscriptionId,
+                        status: 'active'
+                    }).select();
                 }
 
-                // 4. Buscar saldo atual e adicionar créditos
+                // 5. Buscar saldo atual e adicionar créditos
                 const { data: currentCredits } = await supabase
                     .from('user_credits')
                     .select('balance')
-                    .eq('user_id', sub.user_id)
-                    .single();
+                    .eq('user_id', userId)
+                    .maybeSingle();
 
                 const currentBalance = currentCredits?.balance || 0;
                 const newBalance = currentBalance + plan.monthly_credits;
@@ -140,7 +187,7 @@ export default async function handler(req: any, res: any) {
                 const { error: creditError } = await supabase
                     .from('user_credits')
                     .upsert({
-                        user_id: sub.user_id,
+                        user_id: userId,
                         balance: newBalance,
                         updated_at: new Date().toISOString()
                     }, { onConflict: 'user_id' });
@@ -150,11 +197,11 @@ export default async function handler(req: any, res: any) {
                     throw creditError;
                 }
 
-                // 5. Registrar transação
+                // 6. Registrar transação
                 const { error: transError } = await supabase
                     .from('credit_transactions')
                     .insert({
-                        user_id: sub.user_id,
+                        user_id: userId,
                         amount: plan.monthly_credits,
                         type: 'monthly_allocation',
                         description: `Créditos mensais do plano: ${plan.id}`
@@ -164,7 +211,7 @@ export default async function handler(req: any, res: any) {
                     console.error('Error inserting credit_transaction:', transError);
                 }
 
-                console.log(`Successfully processed invoice.paid: Allocated ${plan.monthly_credits} credits to user ${sub.user_id}. New balance: ${newBalance}`);
+                console.log(`Successfully processed invoice.paid: Allocated ${plan.monthly_credits} credits to user ${userId}. New balance: ${newBalance}`);
                 break;
             }
 
@@ -190,17 +237,29 @@ export default async function handler(req: any, res: any) {
         return res.status(200).json({ received: true });
     } catch (error: any) {
         console.error('Webhook processing error:', error);
-        return res.status(500).send(`Internal Server Error: ${error.message}`);
+        return res.status(500).json({
+            success: false,
+            error: error.message,
+            stack: error.stack,
+            env_check: {
+                has_stripe_key: !!process.env.STRIPE_SECRET_KEY,
+                has_webhook_secret: !!process.env.STRIPE_WEBHOOK_SECRET,
+                has_supabase_url: !!process.env.SUPABASE_URL,
+                has_supabase_key: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+            },
+            hint: 'Se o erro for de assinatura, verifique se a STRIPE_WEBHOOK_SECRET na Vercel é a mesma do painel do Stripe e faça REDEPLOY.'
+        });
     }
 }
 
 /**
- * Função utilitária para obter o corpo bruto da requisição
+ * Função utilitária robusta para obter o corpo bruto da requisição
  */
-async function getRawBody(readable: any): Promise<Buffer> {
-    const chunks = [];
-    for await (const chunk of readable) {
-        chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
-    }
-    return Buffer.concat(chunks);
+function getRawBody(req: any): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+        const chunks: any[] = [];
+        req.on('data', (chunk: any) => chunks.push(chunk));
+        req.on('end', () => resolve(Buffer.concat(chunks)));
+        req.on('error', reject);
+    });
 }
