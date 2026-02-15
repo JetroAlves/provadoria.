@@ -107,15 +107,34 @@ export default async function handler(req: any, res: any) {
             }
 
             case 'invoice.paid': {
-                const invoice = event.data.object as Stripe.Invoice;
-                const subscriptionId = (invoice as any).subscription as string;
-                const priceId = (invoice as any).lines.data[0]?.price?.id;
+                const invoice = event.data.object as any;
 
-                if (!subscriptionId || !priceId) break;
+                // Extração hiper-resiliente de ID de Assinatura
+                const subscriptionId = invoice.subscription ||
+                    invoice.subscription_details?.subscription ||
+                    invoice.lines?.data[0]?.subscription;
+
+                // Extração hiper-resiliente de ID de Preço
+                const firstLine = invoice.lines?.data[0];
+                const priceId = firstLine?.price?.id ||
+                    firstLine?.pricing?.price_details?.price ||
+                    firstLine?.metadata?.price_id;
+
+                if (!subscriptionId || !priceId) {
+                    return res.status(200).json({
+                        success: false,
+                        error: 'Missing critical identifiers',
+                        details: {
+                            subscriptionId: subscriptionId || 'not_found',
+                            priceId: priceId || 'not_found'
+                        },
+                        hint: 'Verifique se a estrutura do JSON do Stripe mudou na versao da API que voce esta usando.'
+                    });
+                }
 
                 // 1. Buscar o plano no banco pelo stripe_price_id ou metadata
                 // Primeiro tentamos pelo ID do metadado se existir
-                const planIdQuery = event.data.object.metadata?.planId;
+                const planIdQuery = invoice.metadata?.planId;
 
                 let { data: plan, error: planError } = await supabase
                     .from('plans')
@@ -294,20 +313,17 @@ export default async function handler(req: any, res: any) {
 
         return res.status(200).json({
             success: true,
-            message: `Event ${event.type} processed successfully`,
-            processed: true
+            message: `Event ${event.type} reached end of handler`,
+            processed_by_default: true,
+            type: event.type
         });
     } catch (error: any) {
         console.error('Webhook processing error:', error);
-        return res.status(200).json({ // Return 200 even on error but with error info
+        return res.status(200).json({
             success: false,
             error: error.message,
-            env_check: {
-                has_stripe_key: !!process.env.STRIPE_SECRET_KEY,
-                has_webhook_secret: !!process.env.STRIPE_WEBHOOK_SECRET,
-                has_supabase_url: !!process.env.SUPABASE_URL,
-                has_supabase_key: !!process.env.SUPABASE_SERVICE_ROLE_KEY
-            }
+            stack: error.stack,
+            context: 'Catch block in main handler'
         });
     }
 }
