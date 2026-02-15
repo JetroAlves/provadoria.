@@ -151,8 +151,34 @@ export default async function handler(req: any, res: any) {
                 }
 
                 if (!userId) {
+                    console.log(`Still no userId for sub ${subscriptionId}. Trying email fallback...`);
+                    const customerId = invoice.customer as string;
+                    if (customerId) {
+                        try {
+                            const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
+                            if (customer.email) {
+                                console.log(`Found email ${customer.email} for customer ${customerId}. Searching in profiles...`);
+                                const { data: profile } = await supabase
+                                    .from('profiles')
+                                    .select('id')
+                                    .eq('email', customer.email)
+                                    .maybeSingle();
+
+                                userId = profile?.id;
+                            }
+                        } catch (err) {
+                            console.error('Email fallback failed:', err);
+                        }
+                    }
+                }
+
+                if (!userId) {
                     console.error('CRITICAL: Could not determine userId for subscription:', subscriptionId);
-                    break;
+                    return res.status(200).json({
+                        success: false,
+                        message: 'User could not be identified',
+                        subscriptionId
+                    });
                 }
 
                 // 4. Garantir que a assinatura exista no banco (upsert resiliente)
@@ -237,20 +263,22 @@ export default async function handler(req: any, res: any) {
                 console.log(`Unhandled event type ${event.type}`);
         }
 
-        return res.status(200).json({ received: true });
+        return res.status(200).json({
+            success: true,
+            message: `Event ${event.type} processed successfully`,
+            processed: true
+        });
     } catch (error: any) {
         console.error('Webhook processing error:', error);
-        return res.status(500).json({
+        return res.status(200).json({ // Return 200 even on error but with error info
             success: false,
             error: error.message,
-            stack: error.stack,
             env_check: {
                 has_stripe_key: !!process.env.STRIPE_SECRET_KEY,
                 has_webhook_secret: !!process.env.STRIPE_WEBHOOK_SECRET,
                 has_supabase_url: !!process.env.SUPABASE_URL,
                 has_supabase_key: !!process.env.SUPABASE_SERVICE_ROLE_KEY
-            },
-            hint: 'Se o erro for de assinatura, verifique se a STRIPE_WEBHOOK_SECRET na Vercel é a mesma do painel do Stripe e faça REDEPLOY.'
+            }
         });
     }
 }

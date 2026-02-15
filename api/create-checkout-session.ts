@@ -86,6 +86,12 @@ export default async function handler(req: any, res: any) {
                 userId: user.id,
                 planId: planId,
             },
+            subscription_data: {
+                metadata: {
+                    userId: user.id,
+                    planId: planId,
+                },
+            },
             customer_email: user.email,
         });
 
