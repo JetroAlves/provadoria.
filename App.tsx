@@ -63,12 +63,13 @@ const AppContent: React.FC = () => {
     <Routes>
       {/* 1. HOME PÚBLICA (Landing Page) */}
       <Route path="/" element={<LandingPage />} />
-      
+
       {/* 2. AUTH FLOW */}
       <Route path={AppRoute.LOGIN} element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
       <Route path={AppRoute.REGISTER} element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
+      <Route path="/signup" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
       <Route path={AppRoute.ONBOARDING} element={<AuthGuard><Onboarding /></AuthGuard>} />
-      
+
       {/* 3. ÁREA DA PLATAFORMA (Dashboard & Ferramentas) */}
       <Route path={AppRoute.DASHBOARD} element={<AuthGuard><Layout><Dashboard /></Layout></AuthGuard>} />
       <Route path={AppRoute.CATALOG} element={<AuthGuard><Layout><Catalog /></Layout></AuthGuard>} />
@@ -84,11 +85,11 @@ const AppContent: React.FC = () => {
       <Route path={AppRoute.TRENDS} element={<AuthGuard><Layout><Trends /></Layout></AuthGuard>} />
       <Route path={AppRoute.SETTINGS} element={<AuthGuard><Layout><Settings /></Layout></AuthGuard>} />
       <Route path={AppRoute.PRODUCT_SHOWCASE} element={<AuthGuard><Layout><ProductShowcase /></Layout></AuthGuard>} />
-      
+
       {/* 4. VITRINES PÚBLICAS DAS LOJAS */}
       <Route path="/loja/:storeSlug" element={<PublicStore />} />
       <Route path="/loja/:storeSlug/produto/:productId" element={<PublicProduct />} />
-      
+
       {/* Redirecionamento padrão para Home se rota não existir */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

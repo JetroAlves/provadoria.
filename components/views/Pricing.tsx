@@ -5,7 +5,8 @@ import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { useSettings } from '../../context/SettingsContext';
 
-const PLANS = [
+// Fallback local plans em caso de erro no fetch
+const DEFAULT_PLANS = [
   {
     id: 'starter',
     name: 'Starter',
@@ -71,9 +72,52 @@ const Pricing: React.FC = () => {
   const { user } = useAuth();
   const [loadingPlan, setLoadingPlan] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
+  const [plans, setPlans] = React.useState<any[]>(DEFAULT_PLANS);
+  const [currentPlanId, setCurrentPlanId] = React.useState<string | null>(null);
 
-  // Simulação do plano atual (no futuro virá do contexto/backend)
-  const currentPlanId = 'starter';
+  React.useEffect(() => {
+    const fetchPlansAndSub = async () => {
+      try {
+        // 1. Buscar planos reais
+        const { data: plansData } = await supabase
+          .from('plans')
+          .select('*')
+          .order('monthly_price');
+
+        if (plansData && plansData.length > 0) {
+          setPlans(plansData.map(p => ({
+            id: p.id,
+            name: p.name,
+            price: p.monthly_price,
+            credits: p.monthly_credits,
+            description: p.description,
+            features: p.features || [],
+            highlight: p.id === 'pro',
+            tag: p.id === 'pro' ? 'MAIS POPULAR' : undefined,
+            cta: p.id === 'business' ? 'Falar com Vendas' : 'Assinar Plano'
+          })));
+        }
+
+        // 2. Buscar plano atual do usuário
+        if (user) {
+          const { data: sub } = await supabase
+            .from('user_subscriptions')
+            .select('plan_id')
+            .eq('user_id', user.id)
+            .eq('status', 'active')
+            .maybeSingle();
+
+          if (sub) {
+            setCurrentPlanId(sub.plan_id);
+          }
+        }
+      } catch (err) {
+        console.error("Erro ao carregar dados de cobrança:", err);
+      }
+    };
+
+    fetchPlansAndSub();
+  }, [user]);
 
   const handleSubscribe = async (planId: string) => {
     if (!user) return;
@@ -130,7 +174,7 @@ const Pricing: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
-        {PLANS.map((plan) => {
+        {plans.map((plan) => {
           const isCurrent = currentPlanId === plan.id;
           const isLoading = loadingPlan === plan.id;
 

@@ -1,6 +1,8 @@
 
 import React from 'react';
 import { TrendingUp, Users, ShoppingBag, ArrowUpRight, ArrowDownRight, Sparkles, Plus, CheckCircle2, Layers } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../context/AuthContext';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useSettings } from '../../context/SettingsContext';
 import { useNavigate } from 'react-router-dom';
@@ -8,12 +10,77 @@ import { AppRoute } from '../../types';
 
 // O gráfico agora simula dados baseados no volume atual de produtos
 const Dashboard: React.FC = () => {
+  const { user } = useAuth();
   const { products, settings, savedLooks, aiDrafts } = useSettings();
   const navigate = useNavigate();
+  const [subscription, setSubscription] = React.useState<any>(null);
+  const [credits, setCredits] = React.useState<number>(0);
+  const [isLoadingBilling, setIsLoadingBilling] = React.useState(true);
+
+  React.useEffect(() => {
+    const fetchBilling = async () => {
+      if (!user) return;
+      setIsLoadingBilling(true);
+      try {
+        const [subRes, credRes] = await Promise.all([
+          supabase.from('user_subscriptions')
+            .select('*, plans(name)')
+            .eq('user_id', user.id)
+            .eq('status', 'active')
+            .maybeSingle(),
+          supabase.from('user_credits')
+            .select('balance')
+            .eq('user_id', user.id)
+            .maybeSingle()
+        ]);
+
+        if (subRes.data) setSubscription(subRes.data);
+        if (credRes.data) setCredits(credRes.data.balance);
+      } catch (err) {
+        console.error("Erro ao carregar créditos no dashboard:", err);
+      } finally {
+        setIsLoadingBilling(false);
+      }
+    };
+
+    fetchBilling();
+  }, [user]);
+
+  const CreditsSummary = () => (
+    <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6 group hover:shadow-xl transition-all mb-10 overflow-hidden relative">
+      <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none text-black"><Sparkles size={120} /></div>
+      <div className="flex items-center gap-5">
+        <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center text-white shadow-2xl">
+          <Layers size={32} />
+        </div>
+        <div>
+          <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-1">Status da Assinatura</h2>
+          <div className="flex items-center gap-3">
+            <p className="text-2xl font-black text-slate-900 tracking-tighter uppercase italic">{subscription?.plans?.name || 'Carregando...'}</p>
+            <span className="px-3 py-1 bg-emerald-100 text-emerald-600 text-[8px] font-black uppercase tracking-widest rounded-full">Ativa</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="h-px w-full md:h-12 md:w-px bg-slate-100" />
+
+      <div className="text-center md:text-left">
+        <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-1">Saldo de Créditos</h2>
+        <p className="text-4xl font-black text-slate-900 tracking-tighter">{credits} <span className="text-sm font-bold text-slate-300">disponíveis</span></p>
+      </div>
+
+      <button
+        onClick={() => navigate(AppRoute.SETTINGS)}
+        className="px-8 py-4 bg-slate-50 text-black hover:bg-black hover:text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2 group/btn"
+      >
+        Gerenciar Plano <ArrowUpRight size={14} className="group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
+      </button>
+    </div>
+  );
 
   const totalStock = products.reduce((acc, p) => acc + (p.stock || 0), 0);
   const activeProducts = products.filter(p => p.status === 'active').length;
-  
+
   // Mock de gráfico proporcional ao crescimento real do catálogo
   const chartData = [
     { name: 'Seg', sales: 1200 + products.length * 10, reach: 2400 },
@@ -45,18 +112,20 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
+      <CreditsSummary />
+
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <h1 className="text-4xl font-black text-slate-900 tracking-tight">Painel de Controle</h1>
           <p className="text-slate-500 mt-1 font-medium italic">Seu ecossistema de moda operando na <span className="text-black font-bold">{settings.storeName}</span>.</p>
         </div>
         <div className="flex gap-3">
-            <button 
-              onClick={() => navigate(AppRoute.CATALOG_NEW)}
-              className="px-6 py-4 bg-black text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl active:scale-95 flex items-center gap-2"
-            >
-              <Plus size={18} /> Novo Produto
-            </button>
+          <button
+            onClick={() => navigate(AppRoute.CATALOG_NEW)}
+            className="px-6 py-4 bg-black text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl active:scale-95 flex items-center gap-2"
+          >
+            <Plus size={18} /> Novo Produto
+          </button>
         </div>
       </div>
 
@@ -80,14 +149,14 @@ const Dashboard: React.FC = () => {
               <AreaChart data={chartData}>
                 <defs>
                   <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#000" stopOpacity={0.1}/>
-                    <stop offset="95%" stopColor="#000" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#000" stopOpacity={0.1} />
+                    <stop offset="95%" stopColor="#000" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 'bold'}} dy={10} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 'bold' }} dy={10} />
                 <YAxis hide />
-                <Tooltip 
+                <Tooltip
                   contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}
                   itemStyle={{ fontWeight: 'black', fontSize: '12px' }}
                 />
@@ -107,7 +176,7 @@ const Dashboard: React.FC = () => {
               <p className="text-[10px] text-white/40 font-black uppercase tracking-widest">Recomendado Hoje</p>
             </div>
           </div>
-          
+
           <div className="space-y-6 flex-1 relative z-10">
             <div className="p-6 bg-white/5 rounded-3xl border border-white/10 hover:bg-white/10 transition-all cursor-pointer group">
               <p className="text-sm font-black text-white group-hover:text-amber-400 transition-colors">🚀 Oportunidade: Catálogo</p>
@@ -118,7 +187,7 @@ const Dashboard: React.FC = () => {
               <p className="text-xs text-slate-400 mt-2 leading-relaxed">Você já salvou {savedLooks.length} looks. Gere novos roteiros no Marketing IA para viralizar.</p>
             </div>
           </div>
-          
+
           <button onClick={() => navigate(AppRoute.TRENDS)} className="mt-10 w-full py-5 bg-white text-black rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-100 transition-all shadow-xl active:scale-95">
             Ver Tendências
           </button>

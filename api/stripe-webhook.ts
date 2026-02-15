@@ -72,41 +72,57 @@ export default async function handler(req: any, res: any) {
             case 'invoice.paid': {
                 const invoice = event.data.object as Stripe.Invoice;
                 const subscriptionId = (invoice as any).subscription as string;
+                const priceId = (invoice as any).lines.data[0]?.price?.id;
 
-                if (!subscriptionId) break;
+                if (!subscriptionId || !priceId) break;
 
-                // Buscar assinatura para pegar o userId e planId
+                // 1. Buscar o planId correspondente ao priceId na tabela plans
+                const { data: plan, error: planError } = await supabase
+                    .from('plans')
+                    .select('id, monthly_credits')
+                    .eq('stripe_price_id', priceId)
+                    .single();
+
+                if (planError || !plan) {
+                    console.error('Plan not found for stripe_price_id:', priceId, planError);
+                    break;
+                }
+
+                // 2. Buscar o userId associado a esta assinatura
                 const { data: sub, error: subError } = await supabase
                     .from('user_subscriptions')
-                    .select('user_id, plan_id')
+                    .select('user_id')
                     .eq('stripe_subscription_id', subscriptionId)
                     .single();
 
                 if (subError || !sub) {
-                    console.error('Subscription not found for invoice.paid:', subscriptionId, subError);
+                    // Se não encontrar, tenta buscar pelo checkout session (fallback)
+                    // Ou talvez a assinatura ainda não tenha sido criada no checkout.session.completed
+                    console.error('Subscription not found for subscriptionId:', subscriptionId, subError);
                     break;
                 }
 
-                // Buscar monthly_credits do plano
-                const { data: plan, error: planError } = await supabase
-                    .from('plans')
-                    .select('monthly_credits')
-                    .eq('id', sub.plan_id)
-                    .single();
+                // 3. Atualizar assinatura com o novo planId (em caso de upgrade/downgrade) e status active
+                const { error: updateSubError } = await supabase
+                    .from('user_subscriptions')
+                    .update({
+                        plan_id: plan.id,
+                        status: 'active',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('stripe_subscription_id', subscriptionId);
 
-                if (planError || !plan) {
-                    console.error('Plan not found for id:', sub.plan_id, planError);
-                    break;
+                if (updateSubError) {
+                    console.error('Error updating user_subscriptions on invoice.paid:', updateSubError);
                 }
 
-                // Buscar saldo atual
-                const { data: currentCredits, error: balanceError } = await supabase
+                // 4. Buscar saldo atual e adicionar créditos
+                const { data: currentCredits } = await supabase
                     .from('user_credits')
                     .select('balance')
                     .eq('user_id', sub.user_id)
                     .single();
 
-                // user_credits pode não existir para novos usuários
                 const currentBalance = currentCredits?.balance || 0;
                 const newBalance = currentBalance + plan.monthly_credits;
 
@@ -123,21 +139,21 @@ export default async function handler(req: any, res: any) {
                     throw creditError;
                 }
 
-                // Registrar transação
+                // 5. Registrar transação
                 const { error: transError } = await supabase
                     .from('credit_transactions')
                     .insert({
                         user_id: sub.user_id,
                         amount: plan.monthly_credits,
                         type: 'monthly_allocation',
-                        description: `Créditos mensais do plano: ${plan.monthly_credits}`
+                        description: `Créditos mensais do plano: ${plan.id}`
                     });
 
                 if (transError) {
                     console.error('Error inserting credit_transaction:', transError);
                 }
 
-                console.log(`Allocated ${plan.monthly_credits} credits to user ${sub.user_id}. New balance: ${newBalance}`);
+                console.log(`Successfully processed invoice.paid: Allocated ${plan.monthly_credits} credits to user ${sub.user_id}. New balance: ${newBalance}`);
                 break;
             }
 
