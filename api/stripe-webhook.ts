@@ -95,6 +95,13 @@ export default async function handler(req: any, res: any) {
                         if (insertError) console.error('Final attempt failed:', insertError);
                     }
                     console.log(`Successfully processed checkout.session.completed for user ${userId}`);
+                } else {
+                    return res.status(200).json({
+                        success: false,
+                        error: 'Missing userId or planId in session',
+                        userId,
+                        planId
+                    });
                 }
                 break;
             }
@@ -118,7 +125,12 @@ export default async function handler(req: any, res: any) {
 
                 if (planError || !plan) {
                     console.error('Plan not found for stripe_price_id:', priceId, planError);
-                    break;
+                    return res.status(200).json({
+                        success: false,
+                        error: 'Plan not found in database',
+                        stripePriceId: priceId,
+                        planError
+                    });
                 }
 
                 // 2. Buscar o userId associado a esta assinatura em nosso banco
@@ -241,6 +253,23 @@ export default async function handler(req: any, res: any) {
                 }
 
                 console.log(`Successfully processed invoice.paid: Allocated ${plan.monthly_credits} credits to user ${userId}. New balance: ${newBalance}`);
+
+                // Retornar sucesso explícito aqui para ver no dashboard do Stripe
+                return res.status(200).json({
+                    success: true,
+                    message: 'Credits allocated successfully',
+                    data: {
+                        user_id: userId,
+                        plan_id: plan.id,
+                        credits_added: creditsToAdd,
+                        new_balance: newBalance,
+                        db_results: {
+                            sub_error: upsertSubError,
+                            credit_error: creditError,
+                            trans_error: transError
+                        }
+                    }
+                });
                 break;
             }
 
