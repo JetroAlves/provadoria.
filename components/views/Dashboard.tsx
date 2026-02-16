@@ -23,20 +23,21 @@ const Dashboard: React.FC = () => {
       setIsLoadingBilling(true);
       try {
         const [subRes, credRes] = await Promise.all([
-          // Busca a assinatura mais recente, independente do status, para termos o plano
+          // Busca a assinatura de forma simples, sem joins ou orders que podem falhar
           supabase.from('user_subscriptions')
-            .select('*, plans(name)')
+            .select('plan_id, status')
             .eq('user_id', user.id)
-            .order('updated_at', { ascending: false })
-            .limit(1),
+            .maybeSingle(),
           supabase.from('user_credits')
             .select('balance')
             .eq('user_id', user.id)
             .maybeSingle()
         ]);
 
-        if (subRes.data && subRes.data.length > 0) {
-          setSubscription(subRes.data[0]);
+        if (subRes.data) {
+          setSubscription(subRes.data);
+        } else {
+          setSubscription(null);
         }
         if (credRes.data) setCredits(credRes.data.balance);
       } catch (err) {
@@ -55,17 +56,16 @@ const Dashboard: React.FC = () => {
       if (isLoadingBilling) return 'Carregando...';
       if (!subscription) return 'Starter';
 
-      // Tenta pegar o nome do join (pode vir como objeto ou array dependendo da config do Supabase)
-      const joinedName = Array.isArray(subscription.plans)
-        ? subscription.plans[0]?.name
-        : subscription.plans?.name;
+      const pid = subscription.plan_id;
+      if (pid === 'free') return 'Grátis';
+      if (pid === 'pro') return 'Pro';
+      if (pid === 'business') return 'Business';
+      if (pid === 'starter') return 'Starter';
+      if (pid === 'enterprise') return 'Enterprise';
 
-      if (joinedName) return joinedName;
-
-      // Fallback para o ID do plano formatado
-      if (subscription.plan_id === 'free') return 'Grátis';
-      if (subscription.plan_id) {
-        return subscription.plan_id.charAt(0).toUpperCase() + subscription.plan_id.slice(1);
+      // Fallback para capitalização
+      if (pid) {
+        return pid.charAt(0).toUpperCase() + pid.slice(1);
       }
 
       return 'Starter';
