@@ -23,10 +23,10 @@ const Dashboard: React.FC = () => {
       setIsLoadingBilling(true);
       try {
         const [subRes, credRes] = await Promise.all([
+          // Busca a assinatura mais recente, independente do status, para termos o plano
           supabase.from('user_subscriptions')
             .select('*, plans(name)')
             .eq('user_id', user.id)
-            .eq('status', 'active')
             .order('updated_at', { ascending: false })
             .limit(1),
           supabase.from('user_credits')
@@ -49,49 +49,67 @@ const Dashboard: React.FC = () => {
     fetchBilling();
   }, [user]);
 
-  const CreditsSummary = () => (
-    <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6 group hover:shadow-xl transition-all mb-10 overflow-hidden relative">
-      <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none text-black"><Sparkles size={120} /></div>
-      <div className="flex items-center gap-5">
-        <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center text-white shadow-2xl">
-          <Layers size={32} />
-        </div>
-        <div>
-          <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-1">Status da Assinatura</h2>
-          <div className="flex items-center gap-3">
-            <p className="text-2xl font-black text-slate-900 tracking-tighter uppercase italic">
-              {isLoadingBilling
-                ? 'Carregando...'
-                : (subscription?.plans?.name || (subscription?.plan_id === 'free' ? 'Grátis' : (subscription?.plan_id ? subscription.plan_id.charAt(0).toUpperCase() + subscription.plan_id.slice(1) : 'Starter')))}
-            </p>
-            {subscription?.status && (
-              <span className={`px-3 py-1 text-[8px] font-black uppercase tracking-widest rounded-full ${subscription.status === 'active' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'
+  const CreditsSummary = () => {
+    // Helper para extrair o nome do plano de forma robusta
+    const getPlanName = () => {
+      if (isLoadingBilling) return 'Carregando...';
+      if (!subscription) return 'Starter';
+
+      // Tenta pegar o nome do join (pode vir como objeto ou array dependendo da config do Supabase)
+      const joinedName = Array.isArray(subscription.plans)
+        ? subscription.plans[0]?.name
+        : subscription.plans?.name;
+
+      if (joinedName) return joinedName;
+
+      // Fallback para o ID do plano formatado
+      if (subscription.plan_id === 'free') return 'Grátis';
+      if (subscription.plan_id) {
+        return subscription.plan_id.charAt(0).toUpperCase() + subscription.plan_id.slice(1);
+      }
+
+      return 'Starter';
+    };
+
+    const planStatus = subscription?.status || 'active';
+
+    return (
+      <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6 group hover:shadow-xl transition-all mb-10 overflow-hidden relative">
+        <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none text-black"><Sparkles size={120} /></div>
+        <div className="flex items-center gap-5">
+          <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center text-white shadow-2xl">
+            <Layers size={32} />
+          </div>
+          <div>
+            <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-1">Status da Assinatura</h2>
+            <div className="flex items-center gap-3">
+              <p className="text-2xl font-black text-slate-900 tracking-tighter uppercase italic">
+                {getPlanName()}
+              </p>
+              <span className={`px-3 py-1 text-[8px] font-black uppercase tracking-widest rounded-full ${planStatus === 'active' || planStatus === 'trialing' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'
                 }`}>
-                {subscription.status === 'active' ? 'Ativa' : subscription.status}
+                {planStatus === 'active' ? 'Ativa' : (planStatus === 'trialing' ? 'Teste' : planStatus)}
               </span>
-            )}
-            {!isLoadingBilling && !subscription && (
-              <span className="px-3 py-1 bg-emerald-100 text-emerald-600 text-[8px] font-black uppercase tracking-widest rounded-full">Ativa</span>
-            )}
+            </div>
           </div>
         </div>
+
+        <div className="h-px w-full md:h-12 md:w-px bg-slate-100" />
+
+        <div className="text-center md:text-left">
+          <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-1">Saldo de Créditos</h2>
+          <p className="text-4xl font-black text-slate-900 tracking-tighter">{credits} <span className="text-sm font-bold text-slate-300">disponíveis</span></p>
+        </div>
+
+        <button
+          onClick={() => navigate(AppRoute.SETTINGS)}
+          className="px-8 py-4 bg-slate-50 text-black hover:bg-black hover:text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2 group/btn"
+        >
+          Gerenciar Plano <ArrowUpRight size={14} className="group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
+        </button>
       </div>
-
-      <div className="h-px w-full md:h-12 md:w-px bg-slate-100" />
-
-      <div className="text-center md:text-left">
-        <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-1">Saldo de Créditos</h2>
-        <p className="text-4xl font-black text-slate-900 tracking-tighter">{credits} <span className="text-sm font-bold text-slate-300">disponíveis</span></p>
-      </div>
-
-      <button
-        onClick={() => navigate(AppRoute.SETTINGS)}
-        className="px-8 py-4 bg-slate-50 text-black hover:bg-black hover:text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2 group/btn"
-      >
-        Gerenciar Plano <ArrowUpRight size={14} className="group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
-      </button>
-    </div>
-  );
+    );
+  };
 
   const totalStock = products.reduce((acc, p) => acc + (p.stock || 0), 0);
   const activeProducts = products.filter(p => p.status === 'active').length;
