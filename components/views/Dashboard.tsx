@@ -60,9 +60,19 @@ const Dashboard: React.FC = () => {
           <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-1">Status da Assinatura</h2>
           <div className="flex items-center gap-3">
             <p className="text-2xl font-black text-slate-900 tracking-tighter uppercase italic">
-              {subscription?.plans?.name || (subscription?.plan_id ? (subscription.plan_id.charAt(0).toUpperCase() + subscription.plan_id.slice(1)) : 'Carregando...')}
+              {isLoadingBilling
+                ? 'Carregando...'
+                : (subscription?.plans?.name || (subscription?.plan_id === 'free' ? 'Grátis' : (subscription?.plan_id ? subscription.plan_id.charAt(0).toUpperCase() + subscription.plan_id.slice(1) : 'Starter')))}
             </p>
-            <span className="px-3 py-1 bg-emerald-100 text-emerald-600 text-[8px] font-black uppercase tracking-widest rounded-full">Ativa</span>
+            {subscription?.status && (
+              <span className={`px-3 py-1 text-[8px] font-black uppercase tracking-widest rounded-full ${subscription.status === 'active' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'
+                }`}>
+                {subscription.status === 'active' ? 'Ativa' : subscription.status}
+              </span>
+            )}
+            {!isLoadingBilling && !subscription && (
+              <span className="px-3 py-1 bg-emerald-100 text-emerald-600 text-[8px] font-black uppercase tracking-widest rounded-full">Ativa</span>
+            )}
           </div>
         </div>
       </div>
