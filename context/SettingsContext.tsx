@@ -107,26 +107,24 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         supabase.from('avatars').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
       ]);
 
-      if (pRes.data) {
-        setSettings({
-          ...DEFAULT_SETTINGS,
-          storeName: pRes.data.store_name || user.storeName || '',
-          description: pRes.data.description || '',
-          brandStyle: pRes.data.brand_style || 'Minimalista',
-          brandTone: pRes.data.brand_tone || 'Luxo',
-          targetAudience: pRes.data.target_audience || '',
-          publicStoreSlug: pRes.data.store_slug || '',
-          publicStoreActive: pRes.data.public_store_active ?? true,
-          standardHashtags: pRes.data.standard_hashtags || '',
-          standardCTA: pRes.data.standard_cta || '',
-          virtualTryOnActive: pRes.data.virtual_tryon_active ?? true,
-          seoTitle: pRes.data.seo_title || '',
-          seoDescription: pRes.data.seo_description || '',
-          logoUrl: pRes.data.logo_url || '',
-          bannerDeskUrl: pRes.data.banner_desk_url || '',
-          bannerMobileUrl: pRes.data.banner_mobile_url || '',
-        });
-      }
+      setSettings({
+        ...DEFAULT_SETTINGS,
+        storeName: pRes.data?.store_name || user.storeName || '',
+        description: pRes.data?.description || '',
+        brandStyle: pRes.data?.brand_style || 'Minimalista',
+        brandTone: pRes.data?.brand_tone || 'Luxo',
+        targetAudience: pRes.data?.target_audience || '',
+        publicStoreSlug: pRes.data?.store_slug || '',
+        publicStoreActive: pRes.data?.public_store_active ?? true,
+        standardHashtags: pRes.data?.standard_hashtags || '',
+        standardCTA: pRes.data?.standard_cta || '',
+        virtualTryOnActive: pRes.data?.virtual_tryon_active ?? true,
+        seoTitle: pRes.data?.seo_title || '',
+        seoDescription: pRes.data?.seo_description || '',
+        logoUrl: pRes.data?.logo_url || '',
+        bannerDeskUrl: pRes.data?.banner_desk_url || '',
+        bannerMobileUrl: pRes.data?.banner_mobile_url || '',
+      });
 
       if (cRes.data) {
         setCategories(cRes.data.map(c => ({
@@ -159,13 +157,15 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const updateSettings = async (newSettings: Partial<StoreSettings>) => {
     if (!user) return;
-    const { error } = await supabase.from('profiles').update({
+    const { error } = await supabase.from('profiles').upsert({
+      id: user.id,
+      email: user.email,
       store_name: newSettings.storeName,
       store_slug: newSettings.publicStoreSlug,
       brand_style: newSettings.brandStyle,
       brand_tone: newSettings.brandTone,
       target_audience: newSettings.targetAudience,
-      description: newSettings.description, // Added persistence for description
+      description: newSettings.description,
       standard_hashtags: newSettings.standardHashtags,
       standard_cta: newSettings.standardCTA,
       public_store_active: newSettings.publicStoreActive,
@@ -175,7 +175,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       logo_url: newSettings.logoUrl,
       banner_desk_url: newSettings.bannerDeskUrl,
       banner_mobile_url: newSettings.bannerMobileUrl,
-    }).eq('id', user.id);
+    });
 
     if (error) throw error;
     setSettings(prev => ({ ...prev, ...newSettings }));

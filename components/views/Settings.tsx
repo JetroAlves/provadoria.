@@ -34,6 +34,7 @@ const Settings: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabId>('profile');
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState<string | null>(null);
 
   // Local state for form inputs before saving
@@ -61,13 +62,17 @@ const Settings: React.FC = () => {
   };
 
   const handleSave = async () => {
+    if (formData.storeName === 'Carregando...') return;
+
     setIsSaving(true);
+    setError(null);
     try {
       await updateSettings(formData);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Erro ao salvar configurações:", err);
+      setError(err.message || 'Falha ao salvar as configurações. Verifique sua conexão ou tente novamente.');
     } finally {
       setIsSaving(false);
     }
@@ -109,14 +114,22 @@ const Settings: React.FC = () => {
         </div>
 
         {activeTab !== 'billing' && activeTab !== 'security' && (
-          <button
-            onClick={handleSave}
-            disabled={isSaving}
-            className="flex items-center justify-center gap-2 px-6 py-3 bg-black text-white rounded-xl font-bold hover:bg-slate-800 transition-all shadow-lg disabled:opacity-50 min-w-[160px]"
-          >
-            {isSaving ? <Loader2 className="animate-spin" size={18} /> : saveSuccess ? <Check size={18} /> : <Save size={18} />}
-            {isSaving ? 'Salvando...' : saveSuccess ? 'Salvo!' : 'Salvar Alterações'}
-          </button>
+          <div className="flex flex-col items-end gap-2">
+            <button
+              onClick={handleSave}
+              disabled={isSaving || formData.storeName === 'Carregando...'}
+              className="flex items-center justify-center gap-2 px-6 py-3 bg-black text-white rounded-xl font-bold hover:bg-slate-800 transition-all shadow-lg disabled:opacity-50 min-w-[160px]"
+            >
+              {isSaving ? <Loader2 className="animate-spin" size={18} /> : saveSuccess ? <Check size={18} /> : <Save size={18} />}
+              {isSaving ? 'Salvando...' : saveSuccess ? 'Salvo!' : 'Salvar Alterações'}
+            </button>
+            {error && (
+              <div className="flex items-center gap-2 text-rose-500 text-[10px] font-bold uppercase tracking-wider animate-in fade-in slide-in-from-top-1">
+                <AlertCircle size={14} />
+                {error}
+              </div>
+            )}
+          </div>
         )}
       </div>
 
