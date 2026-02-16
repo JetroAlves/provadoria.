@@ -87,8 +87,9 @@ const Settings: React.FC = () => {
       const fileName = `${user.id}/${field}_${Date.now()}.png`;
       const publicUrl = await uploadFile('avatars', fileName, file); // Reusing 'avatars' bucket or could use a 'stores' bucket
       handleInputChange(field, publicUrl);
-    } catch (err) {
+    } catch (err: any) {
       console.error(`Erro no upload do ${field}:`, err);
+      setError(`Erro no upload: ${err.message || 'Verifique se o balde (bucket) de armazenamento existe.'}`);
     } finally {
       setIsUploading(null);
     }

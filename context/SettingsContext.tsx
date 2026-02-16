@@ -159,7 +159,6 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (!user) return;
     const { error } = await supabase.from('profiles').upsert({
       id: user.id,
-      email: user.email,
       store_name: newSettings.storeName,
       store_slug: newSettings.publicStoreSlug,
       brand_style: newSettings.brandStyle,
