@@ -1,18 +1,18 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  ShoppingBag, 
-  Sparkles, 
-  UserCircle, 
-  Share2, 
-  Heart, 
-  X, 
-  Upload, 
-  Loader2, 
-  Check, 
-  AlertCircle 
+import {
+  ArrowLeft,
+  ShoppingBag,
+  Sparkles,
+  UserCircle,
+  Share2,
+  Heart,
+  X,
+  Upload,
+  Loader2,
+  Check,
+  AlertCircle
 } from 'lucide-react';
 import { useSettings } from '../../context/SettingsContext';
 import { Product } from '../../types';
@@ -75,7 +75,7 @@ const PublicProduct: React.FC = () => {
         data: clientPhoto.split(',')[1],
         mimeType: clientPhoto.split(',')[0].split(':')[1].split(';')[0]
       };
-      
+
       const productMedia = await apiService.urlToBase64(product.image);
       const prompt = `VIRTUAL TRY-ON: Realistic professional fashion application. Dress the person in [USER_PHOTO] with the garment from [PRODUCT_PHOTO]. Preserve identity and textile quality.`;
 
@@ -105,7 +105,7 @@ const PublicProduct: React.FC = () => {
         prompt: `Como um stylist de luxo, sugira uma composição de look para a peça: ${product.name}.`,
         jsonMode: true
       });
-      
+
       const result = JSON.parse(response.text || '{}');
       setStylistResult(result);
     } catch (err: any) {
@@ -143,9 +143,21 @@ const PublicProduct: React.FC = () => {
   return (
     <div className="min-h-screen bg-white font-['Inter'] selection:bg-[#E11D48] selection:text-white pb-32 md:pb-0 animate-in fade-in duration-700">
       <nav className="fixed top-0 left-0 right-0 z-[100] px-6 py-6 bg-white/90 backdrop-blur-xl border-b border-slate-50 flex items-center justify-between">
-        <button onClick={() => navigate(-1)} className="p-3 hover:bg-slate-50 rounded-full text-slate-900 transition-colors"><ArrowLeft size={24} /></button>
+        <div className="flex items-center gap-4">
+          <button onClick={() => navigate(-1)} className="p-3 hover:bg-slate-50 rounded-full text-slate-900 transition-colors"><ArrowLeft size={24} /></button>
+          <div className="hidden md:flex items-center gap-2 cursor-pointer" onClick={() => navigate(`/loja/${storeSlug}`)}>
+            <div className="w-8 h-8 rounded-full overflow-hidden bg-black flex items-center justify-center">
+              {settings.logoUrl ? (
+                <img src={settings.logoUrl} alt={settings.storeName} className="w-full h-full object-contain" />
+              ) : (
+                <span className="text-white text-[10px] font-black">{settings.storeName.charAt(0)}</span>
+              )}
+            </div>
+            <span className="text-sm font-black tracking-tighter uppercase">{settings.storeName}</span>
+          </div>
+        </div>
         <div className="flex items-center gap-3">
-          <button onClick={() => {navigator.clipboard.writeText(window.location.href); setIsCopied(true); setTimeout(() => setIsCopied(false), 2000)}} className={`p-3 rounded-full transition-all ${isCopied ? 'bg-black text-white' : 'hover:bg-slate-50'}`}>{isCopied ? <Check size={20} /> : <Share2 size={20} />}</button>
+          <button onClick={() => { navigator.clipboard.writeText(window.location.href); setIsCopied(true); setTimeout(() => setIsCopied(false), 2000) }} className={`p-3 rounded-full transition-all ${isCopied ? 'bg-black text-white' : 'hover:bg-slate-50'}`}>{isCopied ? <Check size={20} /> : <Share2 size={20} />}</button>
           <button onClick={() => setIsLiked(!isLiked)} className={`p-3 rounded-full transition-all ${isLiked ? 'text-[#E11D48]' : 'text-slate-900'}`}><Heart size={22} fill={isLiked ? "currentColor" : "none"} /></button>
         </div>
       </nav>
@@ -155,8 +167,8 @@ const PublicProduct: React.FC = () => {
           <div className="aspect-[3/4] md:aspect-square lg:aspect-[4/5] bg-slate-50 overflow-hidden relative md:rounded-[3.5rem] shadow-sm group">
             <img src={product.image} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" alt={product.name} />
             <div className="absolute top-8 left-8 flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur rounded-full border border-white/50">
-               <Sparkles size={14} className="text-[#E11D48]" />
-               <span className="text-[10px] font-black uppercase tracking-widest">Certified Luxury</span>
+              <Sparkles size={14} className="text-[#E11D48]" />
+              <span className="text-[10px] font-black uppercase tracking-widest">Certified Luxury</span>
             </div>
           </div>
         </section>
@@ -169,26 +181,28 @@ const PublicProduct: React.FC = () => {
             {product.description && <p className="text-slate-500 font-medium leading-relaxed italic text-lg border-l-2 border-slate-100 pl-6">{product.description}</p>}
           </div>
 
-          <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 space-y-8 shadow-inner">
-            <div className="flex items-center gap-3">
-              <Sparkles className="text-[#E11D48]" size={20} />
-              <p className="text-[10px] font-black text-slate-800 uppercase tracking-widest">Visualização Inteligente IA</p>
+          {settings.virtualTryOnActive && (
+            <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 space-y-8 shadow-inner">
+              <div className="flex items-center gap-3">
+                <Sparkles className="text-[#E11D48]" size={20} />
+                <p className="text-[10px] font-black text-slate-800 uppercase tracking-widest">Visualização Inteligente IA</p>
+              </div>
+              <div className="grid grid-cols-1 gap-4">
+                <button
+                  onClick={() => setIsTryOnModalOpen(true)}
+                  className="w-full py-5 bg-white border-2 border-black text-black font-black text-[11px] uppercase tracking-widest hover:bg-black hover:text-white transition-all flex items-center justify-center gap-3 active:scale-95 shadow-sm"
+                >
+                  <UserCircle size={20} /> Provar com IA
+                </button>
+                <button
+                  onClick={handleSuggestLook}
+                  className="w-full py-5 bg-black text-white font-black text-[11px] uppercase tracking-widest hover:bg-slate-800 transition-all flex items-center justify-center gap-3 active:scale-95 shadow-xl"
+                >
+                  <Sparkles size={18} /> Ver sugestão de look
+                </button>
+              </div>
             </div>
-            <div className="grid grid-cols-1 gap-4">
-              <button 
-                onClick={() => setIsTryOnModalOpen(true)}
-                className="w-full py-5 bg-white border-2 border-black text-black font-black text-[11px] uppercase tracking-widest hover:bg-black hover:text-white transition-all flex items-center justify-center gap-3 active:scale-95 shadow-sm"
-              >
-                <UserCircle size={20} /> Provar com IA
-              </button>
-              <button 
-                onClick={handleSuggestLook}
-                className="w-full py-5 bg-black text-white font-black text-[11px] uppercase tracking-widest hover:bg-slate-800 transition-all flex items-center justify-center gap-3 active:scale-95 shadow-xl"
-              >
-                <Sparkles size={18} /> Ver sugestão de look
-              </button>
-            </div>
-          </div>
+          )}
 
           <button className="w-full py-6 bg-black text-white rounded-full font-black text-sm uppercase tracking-[0.2em] shadow-2xl flex items-center justify-center gap-4 active:scale-95 transition-all">
             <ShoppingBag size={20} /> Adicionar ao Carrinho
@@ -205,7 +219,7 @@ const PublicProduct: React.FC = () => {
               <h2 className="text-3xl font-black uppercase tracking-tighter">Provador Pro <span className="text-[#E11D48]">.</span></h2>
               <button onClick={() => setIsTryOnModalOpen(false)} className="p-3 bg-slate-50 rounded-full transition-colors hover:bg-rose-50 text-slate-400 hover:text-rose-500"><X size={20} /></button>
             </div>
-            
+
             {!tryOnResult ? (
               <div className="space-y-8">
                 {!clientPhoto ? (
@@ -219,11 +233,11 @@ const PublicProduct: React.FC = () => {
                 ) : (
                   <div className="space-y-8">
                     <div className="aspect-[3/4] max-h-[450px] mx-auto rounded-[3rem] overflow-hidden shadow-2xl border-8 border-white group relative">
-                       <img src={clientPhoto} className="w-full h-full object-cover" />
-                       <button onClick={() => setClientPhoto(null)} className="absolute top-6 right-6 p-4 bg-white/20 backdrop-blur text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"><X size={24} /></button>
+                      <img src={clientPhoto} className="w-full h-full object-cover" />
+                      <button onClick={() => setClientPhoto(null)} className="absolute top-6 right-6 p-4 bg-white/20 backdrop-blur text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"><X size={24} /></button>
                     </div>
                     <button onClick={handleTryOnIA} disabled={isGenerating} className="w-full py-6 bg-black text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-4 active:scale-95 disabled:opacity-30 shadow-2xl transition-all">
-                      {isGenerating ? <Loader2 className="animate-spin" size={24} /> : <Sparkles size={24} />} 
+                      {isGenerating ? <Loader2 className="animate-spin" size={24} /> : <Sparkles size={24} />}
                       {isGenerating ? 'Processando Identidade...' : 'Processar Provador Pro'}
                     </button>
                   </div>
@@ -233,8 +247,8 @@ const PublicProduct: React.FC = () => {
               <div className="space-y-10 animate-in fade-in zoom-in-95 duration-700">
                 <div className="aspect-[3/4] max-h-[500px] mx-auto rounded-[3rem] overflow-hidden shadow-[0_40px_100px_rgba(0,0,0,0.2)] border-8 border-white"><img src={tryOnResult} className="w-full h-full object-cover" /></div>
                 <div className="flex gap-4">
-                   <button onClick={() => setTryOnResult(null)} className="flex-1 py-5 bg-slate-100 text-slate-900 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-slate-200 transition-all">Trocar Foto</button>
-                   <button onClick={() => setIsTryOnModalOpen(false)} className="flex-1 py-5 bg-black text-white rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-xl active:scale-95 transition-all">Finalizar</button>
+                  <button onClick={() => setTryOnResult(null)} className="flex-1 py-5 bg-slate-100 text-slate-900 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-slate-200 transition-all">Trocar Foto</button>
+                  <button onClick={() => setIsTryOnModalOpen(false)} className="flex-1 py-5 bg-black text-white rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-xl active:scale-95 transition-all">Finalizar</button>
                 </div>
               </div>
             )}
@@ -247,41 +261,41 @@ const PublicProduct: React.FC = () => {
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/90 backdrop-blur-md animate-in fade-in" onClick={() => setIsStylistModalOpen(false)} />
           <div className="relative bg-white w-full max-w-lg rounded-[3.5rem] shadow-2xl overflow-hidden p-10 md:p-14 animate-in slide-in-from-bottom-12 duration-500">
-             <div className="flex items-center justify-between mb-10">
-               <h2 className="text-3xl font-black uppercase tracking-tighter flex items-center gap-3"><Sparkles className="text-[#E11D48]" /> Stylist IA</h2>
-               <button onClick={() => setIsStylistModalOpen(false)} className="p-3 bg-slate-50 rounded-full transition-colors hover:bg-rose-50 text-slate-400 hover:text-rose-500"><X size={20} /></button>
-             </div>
-             
-             {isGenerating ? (
-               <div className="py-24 flex flex-col items-center gap-6">
-                 <div className="w-16 h-16 border-4 border-slate-100 border-t-[#E11D48] rounded-full animate-spin"></div>
-                 <p className="text-[11px] font-black uppercase tracking-[0.4em] text-slate-400 animate-pulse">Consultando Tendências...</p>
-               </div>
-             ) : stylistResult ? (
-               <div className="space-y-10 animate-in fade-in">
-                 <div className="p-8 bg-slate-50 rounded-[2.5rem] italic text-slate-600 text-lg leading-relaxed border border-slate-100 shadow-inner">
-                   "{stylistResult.explanation}"
-                 </div>
-                 <div className="space-y-4">
-                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.3em] px-4">Outfit Composition</label>
-                    <div className="grid grid-cols-1 gap-2">
-                       {stylistResult.items?.map((item: string, i: number) => (
-                         <div key={i} className="flex items-center gap-4 p-5 bg-white border border-slate-100 rounded-2xl text-xs font-black uppercase tracking-tight shadow-sm">
-                            <div className="w-2 h-2 bg-[#E11D48] rounded-full shadow-[0_0_8px_rgba(225,29,72,0.5)]" /> {item}
-                         </div>
-                       ))}
-                    </div>
-                 </div>
-                 <button onClick={() => setIsStylistModalOpen(false)} className="w-full py-6 bg-black text-white rounded-full font-black text-xs uppercase tracking-widest shadow-2xl hover:bg-slate-900 transition-all">Fechar</button>
-               </div>
-             ) : (
-               <div className="py-12 text-center space-y-6">
-                  <div className="w-20 h-20 bg-rose-50 rounded-full mx-auto flex items-center justify-center text-rose-500">
-                    <AlertCircle size={32} />
+            <div className="flex items-center justify-between mb-10">
+              <h2 className="text-3xl font-black uppercase tracking-tighter flex items-center gap-3"><Sparkles className="text-[#E11D48]" /> Stylist IA</h2>
+              <button onClick={() => setIsStylistModalOpen(false)} className="p-3 bg-slate-50 rounded-full transition-colors hover:bg-rose-50 text-slate-400 hover:text-rose-500"><X size={20} /></button>
+            </div>
+
+            {isGenerating ? (
+              <div className="py-24 flex flex-col items-center gap-6">
+                <div className="w-16 h-16 border-4 border-slate-100 border-t-[#E11D48] rounded-full animate-spin"></div>
+                <p className="text-[11px] font-black uppercase tracking-[0.4em] text-slate-400 animate-pulse">Consultando Tendências...</p>
+              </div>
+            ) : stylistResult ? (
+              <div className="space-y-10 animate-in fade-in">
+                <div className="p-8 bg-slate-50 rounded-[2.5rem] italic text-slate-600 text-lg leading-relaxed border border-slate-100 shadow-inner">
+                  "{stylistResult.explanation}"
+                </div>
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.3em] px-4">Outfit Composition</label>
+                  <div className="grid grid-cols-1 gap-2">
+                    {stylistResult.items?.map((item: string, i: number) => (
+                      <div key={i} className="flex items-center gap-4 p-5 bg-white border border-slate-100 rounded-2xl text-xs font-black uppercase tracking-tight shadow-sm">
+                        <div className="w-2 h-2 bg-[#E11D48] rounded-full shadow-[0_0_8px_rgba(225,29,72,0.5)]" /> {item}
+                      </div>
+                    ))}
                   </div>
-                  <p className="text-[11px] font-black uppercase tracking-widest text-rose-600">Erro ao carregar consultoria.</p>
-               </div>
-             )}
+                </div>
+                <button onClick={() => setIsStylistModalOpen(false)} className="w-full py-6 bg-black text-white rounded-full font-black text-xs uppercase tracking-widest shadow-2xl hover:bg-slate-900 transition-all">Fechar</button>
+              </div>
+            ) : (
+              <div className="py-12 text-center space-y-6">
+                <div className="w-20 h-20 bg-rose-50 rounded-full mx-auto flex items-center justify-center text-rose-500">
+                  <AlertCircle size={32} />
+                </div>
+                <p className="text-[11px] font-black uppercase tracking-widest text-rose-600">Erro ao carregar consultoria.</p>
+              </div>
+            )}
           </div>
         </div>
       )}
