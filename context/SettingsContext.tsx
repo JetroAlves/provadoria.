@@ -27,6 +27,9 @@ export interface StoreSettings {
   publicStoreDescription: string;
   seoTitle: string;
   seoDescription: string;
+  logoUrl?: string;
+  bannerDeskUrl?: string;
+  bannerMobileUrl?: string;
 }
 
 interface SettingsContextType {
@@ -74,6 +77,9 @@ const DEFAULT_SETTINGS: StoreSettings = {
   publicStoreDescription: '',
   seoTitle: '',
   seoDescription: '',
+  logoUrl: '',
+  bannerDeskUrl: '',
+  bannerMobileUrl: '',
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -113,6 +119,12 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           publicStoreActive: pRes.data.public_store_active ?? true,
           standardHashtags: pRes.data.standard_hashtags || '',
           standardCTA: pRes.data.standard_cta || '',
+          virtualTryOnActive: pRes.data.virtual_tryon_active ?? true,
+          seoTitle: pRes.data.seo_title || '',
+          seoDescription: pRes.data.seo_description || '',
+          logoUrl: pRes.data.logo_url || '',
+          bannerDeskUrl: pRes.data.banner_desk_url || '',
+          bannerMobileUrl: pRes.data.banner_mobile_url || '',
         });
       }
 
@@ -153,9 +165,16 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       brand_style: newSettings.brandStyle,
       brand_tone: newSettings.brandTone,
       target_audience: newSettings.targetAudience,
+      description: newSettings.description, // Added persistence for description
       standard_hashtags: newSettings.standardHashtags,
       standard_cta: newSettings.standardCTA,
       public_store_active: newSettings.publicStoreActive,
+      virtual_tryon_active: newSettings.virtualTryOnActive,
+      seo_title: newSettings.seoTitle,
+      seo_description: newSettings.seoDescription,
+      logo_url: newSettings.logoUrl,
+      banner_desk_url: newSettings.bannerDeskUrl,
+      banner_mobile_url: newSettings.bannerMobileUrl,
     }).eq('id', user.id);
 
     if (error) throw error;
@@ -165,12 +184,12 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const addProduct = async (product: Omit<Product, 'id'>) => {
     if (!user) return;
     const { data, error } = await supabase.from('products').insert({
-      user_id: user.id, 
-      name: product.name, 
-      price: product.price, 
+      user_id: user.id,
+      name: product.name,
+      price: product.price,
       stock: product.stock,
-      image_url: product.image, 
-      status: product.status, 
+      image_url: product.image,
+      status: product.status,
       description: product.description,
       category: product.category,
       gender: product.gender,
@@ -197,11 +216,11 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const updateProduct = async (id: string, productUpdate: Partial<Product>) => {
     const { error } = await supabase.from('products').update({
-      name: productUpdate.name, 
-      price: productUpdate.price, 
+      name: productUpdate.name,
+      price: productUpdate.price,
       stock: productUpdate.stock,
-      image_url: productUpdate.image, 
-      status: productUpdate.status, 
+      image_url: productUpdate.image,
+      status: productUpdate.status,
       description: productUpdate.description,
       category: productUpdate.category,
       gender: productUpdate.gender,
@@ -245,13 +264,13 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const reorderCategories = async (newOrder: Category[]) => {
-    const updates = newOrder.map((cat, index) => 
+    const updates = newOrder.map((cat, index) =>
       supabase.from('categories').update({ display_order: index }).eq('id', cat.id)
     );
     const results = await Promise.all(updates);
     const hasError = results.some(r => r.error);
     if (hasError) throw new Error("Falha ao reordenar categorias.");
-    
+
     setCategories(newOrder.map((c, i) => ({ ...c, order: i })));
   };
 
@@ -317,7 +336,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   return (
-    <SettingsContext.Provider value={{ 
+    <SettingsContext.Provider value={{
       settings, products, categories, savedLooks, aiDrafts, avatars, isLoading,
       updateSettings, addProduct, updateProduct, deleteProduct,
       addCategory, updateCategory, deleteCategory, reorderCategories,
