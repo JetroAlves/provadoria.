@@ -39,6 +39,13 @@ const Settings: React.FC = () => {
   // Local state for form inputs before saving
   const [formData, setFormData] = useState(settings);
 
+  // Sync local formData when settings are loaded from context
+  React.useEffect(() => {
+    if (settings.storeName !== 'Carregando...') {
+      setFormData(settings);
+    }
+  }, [settings]);
+
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -280,7 +287,7 @@ const Settings: React.FC = () => {
                         </p>
                       </div>
                     </div>
-                    <div className="relative inline-flex items-center cursor-pointer">
+                    <label className="relative inline-flex items-center cursor-pointer">
                       <input
                         type="checkbox"
                         className="sr-only peer"
@@ -288,7 +295,7 @@ const Settings: React.FC = () => {
                         onChange={(e) => handleInputChange('publicStoreActive', e.target.checked)}
                       />
                       <div className="w-14 h-7 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-6 after:transition-all peer-checked:bg-emerald-600"></div>
-                    </div>
+                    </label>
                   </div>
 
                   {!formData.publicStoreActive && (
@@ -412,7 +419,7 @@ const Settings: React.FC = () => {
                           <p className="text-sm font-black text-slate-900">{pref.label}</p>
                           <p className="text-xs text-slate-500">{pref.desc}</p>
                         </div>
-                        <div className="relative inline-flex items-center cursor-pointer">
+                        <label className="relative inline-flex items-center cursor-pointer">
                           <input
                             type="checkbox"
                             className="sr-only peer"
@@ -420,7 +427,7 @@ const Settings: React.FC = () => {
                             onChange={(e) => handleNestedChange('aiModelPreferences', pref.key, e.target.checked)}
                           />
                           <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-black"></div>
-                        </div>
+                        </label>
                       </div>
                     ))}
                   </div>
@@ -444,7 +451,7 @@ const Settings: React.FC = () => {
                         <p className="text-xs text-indigo-600/70">Exibir o botão de provador IA para seus clientes.</p>
                       </div>
                     </div>
-                    <div className="relative inline-flex items-center cursor-pointer">
+                    <label className="relative inline-flex items-center cursor-pointer">
                       <input
                         type="checkbox"
                         className="sr-only peer"
@@ -452,7 +459,7 @@ const Settings: React.FC = () => {
                         onChange={(e) => handleInputChange('virtualTryOnActive', e.target.checked)}
                       />
                       <div className="w-14 h-7 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-6 after:transition-all peer-checked:bg-indigo-600"></div>
-                    </div>
+                    </label>
                   </div>
                 </div>
               </div>
