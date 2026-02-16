@@ -21,6 +21,7 @@ const DEFAULT_PLANS = [
       'Suporte via Email'
     ],
     highlight: false,
+    tag: '',
     cta: 'Começar Agora'
   },
   {
@@ -56,6 +57,24 @@ const DEFAULT_PLANS = [
       'API Access (Beta)'
     ],
     highlight: false,
+    tag: '',
+    cta: 'Começar Agora'
+  },
+  {
+    id: 'enterprise',
+    name: 'Enterprise',
+    price: 'Sob Consulta',
+    credits: 'Personalizado',
+    description: 'Plano Personalizado para alto volume.',
+    features: [
+      'Créditos sob Demanda',
+      'Desconto por Volume',
+      'Prioridade Total',
+      'Suporte Dedicado',
+      'Integrações Custom'
+    ],
+    highlight: false,
+    tag: '',
     cta: 'Falar com Vendas'
   }
 ];
@@ -85,7 +104,7 @@ const Pricing: React.FC = () => {
           .order('monthly_price');
 
         if (plansData && plansData.length > 0) {
-          setPlans(plansData.map(p => ({
+          const mappedPlans = plansData.map(p => ({
             id: p.id,
             name: p.name,
             price: p.monthly_price,
@@ -93,9 +112,16 @@ const Pricing: React.FC = () => {
             description: p.description,
             features: p.features || [],
             highlight: p.id === 'pro',
-            tag: p.id === 'pro' ? 'MAIS POPULAR' : undefined,
-            cta: p.id === 'business' ? 'Falar com Vendas' : 'Assinar Plano'
-          })));
+            tag: p.id === 'pro' ? 'MAIS POPULAR' : '',
+            cta: p.id === 'enterprise' ? 'Falar com Vendas' : 'Começar Agora'
+          }));
+
+          // Se o Enterprise não estiver no banco, adicionar o default
+          if (!mappedPlans.find(p => p.id === 'enterprise')) {
+            mappedPlans.push(DEFAULT_PLANS.find(p => p.id === 'enterprise')!);
+          }
+
+          setPlans(mappedPlans);
         }
 
         // 2. Buscar plano atual do usuário
@@ -195,8 +221,10 @@ const Pricing: React.FC = () => {
               <div className="mb-6 space-y-2">
                 <h3 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em]">{plan.name}</h3>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-black text-slate-900 tracking-tighter">R$ {plan.price}</span>
-                  <span className="text-slate-400 font-bold">/mês</span>
+                  <span className="text-4xl font-black text-slate-900 tracking-tighter">
+                    {typeof plan.price === 'number' ? `R$ ${plan.price}` : plan.price}
+                  </span>
+                  {typeof plan.price === 'number' && <span className="text-slate-400 font-bold">/mês</span>}
                 </div>
                 <p className="text-xs text-slate-500 font-medium leading-relaxed min-h-[40px]">{plan.description}</p>
               </div>
@@ -214,7 +242,7 @@ const Pricing: React.FC = () => {
 
               <button
                 disabled={isCurrent || isLoading}
-                onClick={() => plan.id === 'business' ? window.open('https://wa.me/seu-numero', '_blank') : handleSubscribe(plan.id)}
+                onClick={() => (plan.id === 'enterprise' || plan.cta === 'Falar com Vendas') ? window.open('https://wa.me/5511995579930', '_blank') : handleSubscribe(plan.id)}
                 className={`w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 ${isCurrent
                   ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
                   : plan.highlight

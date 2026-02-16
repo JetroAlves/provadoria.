@@ -300,8 +300,8 @@ const LandingPage: React.FC = () => {
               <div
                 key={plan.name}
                 className={`relative bg-white rounded-[2.5rem] p-8 md:p-10 flex flex-col h-full transition-all duration-300 ${plan.highlight
-                    ? 'border-2 border-black shadow-2xl scale-105 z-10'
-                    : 'border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1'
+                  ? 'border-2 border-black shadow-2xl scale-105 z-10'
+                  : 'border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1'
                   }`}
               >
                 {plan.highlight && (
@@ -341,11 +341,11 @@ const LandingPage: React.FC = () => {
                     }
                   }}
                   className={`w-full py-5 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-lg active:scale-95 ${plan.highlight
-                      ? 'bg-[#E11D48] text-white hover:bg-rose-700 hover:shadow-rose-200'
-                      : 'bg-black text-white hover:bg-slate-800'
+                    ? 'bg-[#E11D48] text-white hover:bg-rose-700 hover:shadow-rose-200'
+                    : 'bg-black text-white hover:bg-slate-800'
                     }`}
                 >
-                  {(plan as any).customAction ? 'Falar com Vendas' : (plan.highlight ? 'Começar Teste Pro' : 'Criar Conta')}
+                  {(plan as any).customAction ? 'Falar com Vendas' : 'Criar Conta'}
                 </button>
               </div>
             ))}
