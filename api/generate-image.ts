@@ -22,29 +22,73 @@ export default async function handler(req: any, res: any) {
 
         const { prompt, images, aspectRatio, useProModel } = req.body;
         const authHeader = req.headers.authorization;
+        const publicStoreSlug = req.headers['x-store-slug'];
 
-        if (!authHeader) {
-            return res.status(401).json({
-                success: false,
-                error: 'Unauthorized: Missing token'
-            });
-        }
-
-        const token = authHeader.split(' ')[1];
-
-        // Testar Supabase Auth de forma segura
         const supabase = getSupabaseServer();
-        const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+        let targetUserId: string | null = null;
+        let isPublic = false;
 
-        if (authError || !user) {
-            console.error('Auth Error:', authError);
-            return res.status(401).json({
-                success: false,
-                error: 'Unauthorized: Invalid token'
+        if (authHeader) {
+            const token = authHeader.split(' ')[1];
+            const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+            if (authError || !user) {
+                return res.status(401).json({
+                    success: false,
+                    error: 'Unauthorized: Invalid token'
+                });
+            }
+            targetUserId = user.id;
+        } else if (publicStoreSlug) {
+            // Public Access Logic
+            const { data: profile, error: pError } = await supabase
+                .from('profiles')
+                .select('id, virtual_tryon_active')
+                .eq('store_slug', publicStoreSlug)
+                .single();
+
+            if (pError || !profile) {
+                return res.status(404).json({ success: false, error: 'Store not found' });
+            }
+
+            if (!profile.virtual_tryon_active) {
+                return res.status(403).json({ success: false, error: 'O provador virtual não está ativo para esta loja.' });
+            }
+
+            targetUserId = profile.id;
+            isPublic = true;
+
+            // Simple IP Rate Limit (5 per hour)
+            const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+            const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
+
+            const { count } = await supabase
+                .from('audit_logs') // Using a generic log table if exists, or just skip if not
+                .select('*', { count: 'exact', head: true })
+                .eq('ip_address', clientIp)
+                .gt('created_at', oneHourAgo);
+
+            if (count && count >= 5) {
+                return res.status(429).json({ success: false, error: 'Limite de uso por hora atingido para seu endereço IP.' });
+            }
+
+            // Log usage for IP limiting
+            await supabase.from('audit_logs').insert({
+                user_id: targetUserId,
+                action: 'public_try_on',
+                ip_address: clientIp,
+                metadata: { slug: publicStoreSlug }
             });
         }
 
-        const result = await generateImage(user.id, prompt, images, aspectRatio, useProModel);
+        if (!targetUserId) {
+            return res.status(401).json({
+                success: false,
+                error: 'Unauthorized: Missing identification'
+            });
+        }
+
+        const result = await generateImage(targetUserId, prompt, images, aspectRatio, useProModel, isPublic);
 
         return res.status(200).json({
             success: true,

@@ -72,7 +72,14 @@ const PublicProduct: React.FC = () => {
   }, [productId, products, isContextLoading]);
 
   const handleTryOnIA = async () => {
-    if (!clientPhoto || !product || isGenerating) return;
+    const sessionTriesKey = `tryon_tries_${storeSlug}`;
+    const triesCount = parseInt(sessionStorage.getItem(sessionTriesKey) || '0');
+
+    if (triesCount >= 3) {
+      setError("Limite de 3 tentativas por sessão atingido. Volte mais tarde!");
+      return;
+    }
+
     setIsGenerating(true);
     setError(null);
 
@@ -89,11 +96,13 @@ const PublicProduct: React.FC = () => {
         prompt,
         images: [clientMedia, productMedia],
         aspectRatio: "3:4",
-        useProModel: true
+        useProModel: true,
+        storeSlug: storeSlug // Pass context
       });
 
       if (response.image) {
         setTryOnResult(response.image);
+        sessionStorage.setItem(sessionTriesKey, (triesCount + 1).toString());
       }
     } catch (err: any) {
       setError(err.message || "Erro inesperado na IA.");
@@ -109,7 +118,8 @@ const PublicProduct: React.FC = () => {
     try {
       const response = await apiService.generateText({
         prompt: `Como um stylist de luxo, sugira uma composição de look para a peça: ${product.name}.`,
-        jsonMode: true
+        jsonMode: true,
+        storeSlug: storeSlug
       });
 
       const result = JSON.parse(response.text || '{}');

@@ -2,24 +2,30 @@
 // Este arquivo simula a comunicação com o backend (server/gemini.ts)
 import { supabase } from '../lib/supabase';
 
-// Helper para obter o token de sessão
+// Helper para obter o token de sessão (Opcional para Vitrine Pública)
 const getAuthToken = async () => {
   const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.access_token) {
-    throw new Error('Usuário não autenticado');
-  }
-  return session.access_token;
+  return session?.access_token || null;
 };
 
 // Helper genérico para chamadas de API
-const apiCall = async (endpoint: string, body: any) => {
+const apiCall = async (endpoint: string, body: any, storeSlug?: string) => {
   const token = await getAuthToken();
+  const headers: any = {
+    'Content-Type': 'application/json'
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  } else if (storeSlug) {
+    headers['X-Store-Slug'] = storeSlug;
+  } else {
+    throw new Error('Identificação necessária para usar a IA.');
+  }
+
   const response = await fetch(`/api/${endpoint}`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
+    headers,
     body: JSON.stringify(body)
   });
 
@@ -35,40 +41,40 @@ const apiCall = async (endpoint: string, body: any) => {
 
 export const apiService = {
 
-  generateText: async (params: { prompt: string, systemInstruction?: string, jsonMode?: boolean }) => {
+  generateText: async (params: { prompt: string, systemInstruction?: string, jsonMode?: boolean, storeSlug?: string }) => {
     try {
       return await apiCall('generate-text', {
         prompt: params.prompt,
         systemInstruction: params.systemInstruction,
         jsonSchema: params.jsonMode
-      });
+      }, params.storeSlug);
     } catch (error: any) {
       console.error("API Error (Text):", error);
       throw new Error(error.message || "Erro na geração de texto");
     }
   },
 
-  generateImage: async (params: { prompt: string, images?: { data: string, mimeType: string }[], aspectRatio?: string, useProModel?: boolean }) => {
+  generateImage: async (params: { prompt: string, images?: { data: string, mimeType: string }[], aspectRatio?: string, useProModel?: boolean, storeSlug?: string }) => {
     try {
       return await apiCall('generate-image', {
         prompt: params.prompt,
         images: params.images,
         aspectRatio: params.aspectRatio,
         useProModel: params.useProModel
-      });
+      }, params.storeSlug);
     } catch (error: any) {
       console.error("API Error (Image):", error);
       throw new Error(error.message || "Erro na geração de imagem");
     }
   },
 
-  generateVideo: async (params: { prompt: string, image?: { data: string, mimeType: string }, aspectRatio?: string }) => {
+  generateVideo: async (params: { prompt: string, image?: { data: string, mimeType: string }, aspectRatio?: string, storeSlug?: string }) => {
     try {
       return await apiCall('generate-video', {
         prompt: params.prompt,
         image: params.image,
         aspectRatio: params.aspectRatio
-      });
+      }, params.storeSlug);
     } catch (error: any) {
       console.error("API Error (Video):", error);
       throw new Error(error.message || "Erro na geração de vídeo");

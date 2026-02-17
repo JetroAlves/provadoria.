@@ -23,7 +23,7 @@ const COSTS = {
 
 // Helper para validar e deduzir créditos
 const UsageController = {
-  async validateAndAuthorize(userId: string, feature: keyof typeof COSTS) {
+  async validateAndAuthorize(userId: string, feature: keyof typeof COSTS, isPublic: boolean = false) {
     const supabase = getSupabaseServer();
     // 1. Buscar assinatura e plano do usuário
     const { data: sub, error: subError } = await supabase
@@ -32,19 +32,19 @@ const UsageController = {
       .eq('user_id', userId)
       .single();
 
-    if (subError || !sub) throw new Error("Assinatura não encontrada. Contate o suporte.");
+    if (subError || !sub) {
+      throw new Error(isPublic ? "Esta loja atingiu o limite de provador. Tente mais tarde." : "Assinatura não encontrada. Contate o suporte.");
+    }
 
     const cost = COSTS[feature];
     const plan = sub.plans;
 
-    // 2. Verificar permissões do plano (Ex: Starter não faz vídeo)
+    // 2. Verificar permissões do plano
     if (feature === 'video' && !plan.allow_video) {
-      throw new Error(`Seu plano ${plan.name} não permite geração de vídeo. Faça upgrade.`);
+      throw new Error(`O plano não permite geração de vídeo.`);
     }
 
-    // 3. Verificar limites específicos (Vídeos por mês - se a coluna existir no plano/assinatura, mantemos a lógica, mas removendo a dependência de colunas deletadas se não especificado. O prompt pediu para manter validação de "video allowance", mas pediu para remover "videos_used_this_month" se não existir. Vou assumir que a verificação de limite de vídeo depende dessa coluna, mas se ela não existe mais, não tem como verificar. O prompt diz: "Remove ALL references to videos_used_this_month". Então removo a validação de limite mensal de vídeos baseada nessa coluna.)
-
-    // 4. Verificar saldo de créditos na tabela user_credits (Walle)
+    // 4. Verificar saldo de créditos na tabela user_credits
     const { data: credits } = await supabase
       .from('user_credits')
       .select('balance')
@@ -52,7 +52,7 @@ const UsageController = {
       .single();
 
     if (!credits || credits.balance < cost) {
-      throw new Error(`Créditos insuficientes. Custo: ${cost}, Disponível: ${credits?.balance || 0}.`);
+      throw new Error(isPublic ? "Esta vitrine pausou o provador temporariamente." : `Créditos insuficientes. Custo: ${cost}, Disponível: ${credits?.balance || 0}.`);
     }
 
     return { sub, cost };
@@ -78,9 +78,9 @@ const UsageController = {
 /**
  * Endpoint: /api/generate-text
  */
-export const generateText = async (userId: string, prompt: string, systemInstruction?: string, jsonSchema?: boolean) => {
+export const generateText = async (userId: string, prompt: string, systemInstruction?: string, jsonSchema?: boolean, isPublic: boolean = false) => {
   // Validação de Créditos
-  const { cost } = await UsageController.validateAndAuthorize(userId, 'text');
+  const { cost } = await UsageController.validateAndAuthorize(userId, 'text', isPublic);
 
   const config: any = { systemInstruction };
 
@@ -119,14 +119,15 @@ export const generateImage = async (
   prompt: string,
   images: { data: string, mimeType: string }[] = [],
   aspectRatio: string = "1:1",
-  useProModel: boolean = false
+  useProModel: boolean = false,
+  isPublic: boolean = false
 ) => {
   // Determinar tipo de custo
   let featureType: keyof typeof COSTS = 'image';
   if (images.length > 0) featureType = 'tryOn';
   if (prompt.toLowerCase().includes('avatar')) featureType = 'avatar';
 
-  const { cost } = await UsageController.validateAndAuthorize(userId, featureType);
+  const { cost } = await UsageController.validateAndAuthorize(userId, featureType, isPublic);
 
   const model = useProModel ? MODELS.imageHighQuality : MODELS.image;
 
