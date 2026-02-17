@@ -19,31 +19,46 @@ import {
 import { useSettings } from '../../context/SettingsContext';
 import { Product } from '../../types';
 
-const CATEGORIES = ['Tudo', 'Vestidos', 'Casacos', 'Calças', 'Camisas', 'Acessórios'];
+// CATEGORIES removed to use real ones from context
 
 const PublicStore: React.FC = () => {
   const { storeSlug } = useParams();
   const navigate = useNavigate();
-  const { settings, products, isLoading, loadPublicStore } = useSettings();
+  const { settings, products, categories, isLoading, loadPublicStore } = useSettings();
 
   const [activeCategory, setActiveCategory] = useState('Tudo');
+  const [activeGender, setActiveGender] = useState('Todos');
+  const [activeType, setActiveType] = useState('Todos');
+  const [sortBy, setSortBy] = useState('newest');
   const [searchTerm, setSearchTerm] = useState('');
   const [scrolled, setScrolled] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   // Validate Store Accessibility
   const isAvailable = settings.publicStoreActive && storeSlug === settings.publicStoreSlug;
 
-  // Filter only active and in-stock products
+  // Advanced Filtering and Sorting
   const publicProducts = useMemo(() => {
-    return products.filter(p => {
+    let filtered = products.filter(p => {
       const isActive = p.status === 'active' && p.stock > 0;
       const matchesCategory = activeCategory === 'Tudo' || p.category === activeCategory;
+      const matchesGender = activeGender === 'Todos' || p.gender === activeGender;
+      const matchesType = activeType === 'Todos' || p.wearableType === activeType;
       const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (p.description || '').toLowerCase().includes(searchTerm.toLowerCase());
-      return isActive && matchesCategory && matchesSearch;
+      return isActive && matchesCategory && matchesGender && matchesType && matchesSearch;
     });
-  }, [products, activeCategory, searchTerm]);
+
+    // Sorting Logic
+    return [...filtered].sort((a, b) => {
+      if (sortBy === 'price-asc') return a.price - b.price;
+      if (sortBy === 'price-desc') return b.price - a.price;
+      if (sortBy === 'name') return a.name.localeCompare(b.name);
+      if (sortBy === 'newest') return (b.lastGenerated ? new Date(b.lastGenerated).getTime() : 0) - (a.lastGenerated ? new Date(a.lastGenerated).getTime() : 0);
+      return 0;
+    });
+  }, [products, activeCategory, activeGender, activeType, searchTerm, sortBy]);
 
   useEffect(() => {
     if (storeSlug) {
@@ -173,23 +188,104 @@ const PublicStore: React.FC = () => {
         </div>
       </section>
 
-      {/* Category Filter - Sticky */}
+      {/* Category Filter & Advanced Filters */}
       <div className="sticky top-0 md:top-[88px] z-50 bg-white/90 backdrop-blur-xl border-b border-slate-100 overflow-hidden shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 overflow-x-auto no-scrollbar flex items-center gap-12 py-5">
-          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 shrink-0">Filtrar por:</span>
-          {CATEGORIES.map(cat => (
-            <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={`text-[11px] font-black uppercase tracking-[0.2em] whitespace-nowrap transition-all relative py-2 ${activeCategory === cat ? 'text-black' : 'text-slate-400 hover:text-black'
-                }`}
-            >
-              {cat}
-              {activeCategory === cat && (
-                <span className="absolute bottom-0 left-0 w-full h-0.5 bg-black animate-in slide-in-from-left duration-300"></span>
-              )}
-            </button>
-          ))}
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-4">
+            <div className="flex items-center gap-8 overflow-x-auto no-scrollbar shrink-0">
+              <button
+                onClick={() => setActiveCategory('Tudo')}
+                className={`text-[11px] font-black uppercase tracking-[0.2em] transition-all relative py-2 ${activeCategory === 'Tudo' ? 'text-black' : 'text-slate-400 hover:text-black'}`}
+              >
+                Tudo
+                {activeCategory === 'Tudo' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-black"></span>}
+              </button>
+              {categories.filter(c => c.status === 'active').map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => setActiveCategory(cat.name)}
+                  className={`text-[11px] font-black uppercase tracking-[0.2em] whitespace-nowrap transition-all relative py-2 ${activeCategory === cat.name ? 'text-black' : 'text-slate-400 hover:text-black'}`}
+                >
+                  {cat.name}
+                  {activeCategory === cat.name && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-black"></span>}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-4 ml-auto">
+              <div className="relative">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="bg-transparent text-[11px] font-black uppercase tracking-widest text-slate-500 outline-none cursor-pointer py-2 pl-2 pr-8 appearance-none border-b border-transparent hover:border-slate-200 transition-colors"
+                >
+                  <option value="newest">Mais Recentes</option>
+                  <option value="price-asc">Menor Preço</option>
+                  <option value="price-desc">Maior Preço</option>
+                  <option value="name">Nome (A-Z)</option>
+                </select>
+                <ChevronRight className="absolute right-0 top-1/2 -translate-y-1/2 rotate-90 text-slate-400 pointer-events-none" size={14} />
+              </div>
+
+              <button
+                onClick={() => setIsFilterOpen(!isFilterOpen)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all ${isFilterOpen ? 'bg-black text-white border-black' : 'bg-white text-slate-900 border-slate-200 hover:border-black'}`}
+              >
+                <Filter size={14} />
+                <span className="text-[10px] font-black uppercase tracking-widest">Filtros</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Advanced Filter Panel */}
+          {isFilterOpen && (
+            <div className="py-6 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 animate-in slide-in-from-top-4 duration-300">
+              <div className="space-y-4">
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-50 pb-2">Gênero</p>
+                <div className="flex flex-wrap gap-2">
+                  {['Todos', 'Feminino', 'Masculino', 'Unissex'].map(g => (
+                    <button
+                      key={g}
+                      onClick={() => setActiveGender(g)}
+                      className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest border transition-all ${activeGender === g ? 'bg-black text-white border-black' : 'bg-slate-50 text-slate-500 border-slate-100 hover:border-slate-300'}`}
+                    >
+                      {g}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-50 pb-2">Tipo de Peça</p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { val: 'Todos', label: 'Todos' },
+                    { val: 'top', label: 'Blusas/Top' },
+                    { val: 'bottom', label: 'Calças/Saias' },
+                    { val: 'fullbody', label: 'Vestidos/Macacões' },
+                    { val: 'accessory', label: 'Acessórios' }
+                  ].map(t => (
+                    <button
+                      key={t.val}
+                      onClick={() => setActiveType(t.val)}
+                      className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest border transition-all ${activeType === t.val ? 'bg-black text-white border-black' : 'bg-slate-50 text-slate-500 border-slate-100 hover:border-slate-300'}`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-end justify-end">
+                <button
+                  onClick={() => { setActiveGender('Todos'); setActiveType('Todos'); setActiveCategory('Tudo'); setSearchTerm(''); setSortBy('newest'); }}
+                  className="text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-black transition-colors underline underline-offset-4"
+                >
+                  Limpar Filtros
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
