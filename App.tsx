@@ -24,6 +24,7 @@ import Onboarding from './components/views/Onboarding';
 import { SettingsProvider } from './context/SettingsContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { GalleryProvider } from './context/GalleryContext';
+import { CartProvider } from './context/CartContext';
 import { AppRoute } from './types';
 
 // Componente para rotas que só podem ser vistas se NÃO estiver logado (Login/Register)
@@ -101,9 +102,11 @@ const App: React.FC = () => {
     <AuthProvider>
       <SettingsProvider>
         <GalleryProvider>
-          <HashRouter>
-            <AppContent />
-          </HashRouter>
+          <CartProvider>
+            <HashRouter>
+              <AppContent />
+            </HashRouter>
+          </CartProvider>
         </GalleryProvider>
       </SettingsProvider>
     </AuthProvider>

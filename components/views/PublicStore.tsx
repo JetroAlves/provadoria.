@@ -15,9 +15,13 @@ import {
   Heart,
   Share2,
   AlertCircle,
-  Home
+  Home,
+  Trash2,
+  Plus,
+  Minus
 } from 'lucide-react';
 import { useSettings } from '../../context/SettingsContext';
+import { useCart } from '../../context/CartContext';
 import { Product } from '../../types';
 
 // CATEGORIES removed to use real ones from context
@@ -34,6 +38,10 @@ const PublicStore: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [scrolled, setScrolled] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+
+  const { cartItems, totalItems, totalPrice, updateQuantity, removeItem, clearCart } = useCart();
 
   // Validate Store Accessibility
   const isAvailable = settings.publicStoreActive && storeSlug === settings.publicStoreSlug;
@@ -383,17 +391,126 @@ const PublicStore: React.FC = () => {
         </div>
       </footer>
 
-      {/* Floating WhatsApp Contact (Public View) */}
-      {settings.whatsapp && (
-        <a
-          href={`https://wa.me/${settings.whatsapp.replace(/\D/g, '')}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="fixed bottom-10 right-10 z-[150] w-20 h-20 bg-[#25D366] text-white rounded-full flex items-center justify-center shadow-[0_20px_60px_-15px_rgba(37,211,102,0.5)] hover:scale-110 active:scale-90 transition-all group overflow-hidden"
+      {/* Floating WhatsApp/Cart Controls (Public View) */}
+      <div className="fixed bottom-10 right-10 z-[150] flex flex-col gap-4">
+        {/* Cart Button */}
+        <button
+          onClick={() => setIsCartOpen(true)}
+          className="w-16 h-16 bg-white border border-slate-100 text-black rounded-full flex items-center justify-center shadow-xl hover:scale-110 active:scale-90 transition-all group relative"
         >
-          <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-          <MessageCircle size={36} className="relative z-10 fill-white group-hover:rotate-12 transition-transform" />
-        </a>
+          {totalItems > 0 && (
+            <span className="absolute -top-1 -right-1 w-6 h-6 bg-[#E11D48] text-white text-[10px] font-black rounded-full flex items-center justify-center animate-in zoom-in">
+              {totalItems}
+            </span>
+          )}
+          <ShoppingBag size={24} className="group-hover:rotate-12 transition-transform" />
+        </button>
+
+        {/* WhatsApp Button */}
+        {settings.whatsapp && (
+          <a
+            href={`https://wa.me/${settings.whatsapp.replace(/\D/g, '')}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-16 h-16 bg-[#25D366] text-white rounded-full flex items-center justify-center shadow-xl hover:scale-110 active:scale-90 transition-all group relative overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <MessageCircle size={28} className="relative z-10 fill-white group-hover:rotate-12 transition-transform" />
+          </a>
+        )}
+      </div>
+
+      {/* CART DRAWER */}
+      {isCartOpen && (
+        <div className="fixed inset-0 z-[300] flex justify-end">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-in fade-in" onClick={() => setIsCartOpen(false)} />
+          <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-500">
+            <div className="p-8 border-b border-slate-50 flex items-center justify-between">
+              <h2 className="text-2xl font-black uppercase tracking-tighter">Sua Sacola <span className="text-[#E11D48]">.</span></h2>
+              <button
+                onClick={() => setIsCartOpen(false)}
+                className="p-3 bg-slate-50 rounded-full text-slate-400 hover:text-black transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-8 no-scrollbar">
+              {cartItems.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-center space-y-4 opacity-40">
+                  <ShoppingBag size={48} />
+                  <p className="text-xs font-bold uppercase tracking-widest">Sua sacola está vazia</p>
+                </div>
+              ) : (
+                <div className="space-y-8">
+                  {cartItems.map((item) => (
+                    <div key={item.id} className="flex gap-6 group">
+                      <div className="w-24 h-24 bg-slate-50 rounded-2xl overflow-hidden border border-slate-100 shrink-0">
+                        <img src={item.image} className="w-full h-full object-cover" alt={item.name} />
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <div className="flex justify-between items-start">
+                          <h4 className="text-sm font-black uppercase tracking-tight pr-4">{item.name}</h4>
+                          <button onClick={() => removeItem(item.id)} className="text-slate-300 hover:text-rose-500 transition-colors">
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                        <p className="text-xs font-bold text-slate-400">R$ {item.price.toLocaleString('pt-BR')}</p>
+
+                        <div className="flex items-center gap-4 pt-2">
+                          <div className="flex items-center bg-slate-50 rounded-lg p-1 border border-slate-100">
+                            <button
+                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                              className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-md transition-all text-slate-400"
+                            >
+                              <Minus size={12} />
+                            </button>
+                            <span className="w-8 text-center text-[11px] font-black">{item.quantity}</span>
+                            <button
+                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                              className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-md transition-all text-slate-400"
+                            >
+                              <Plus size={12} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {cartItems.length > 0 && (
+              <div className="p-8 bg-slate-50 border-t border-slate-100 space-y-6">
+                <div className="flex justify-between items-center">
+                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Total Estimado</p>
+                  <p className="text-3xl font-black tracking-tighter">R$ {totalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                </div>
+
+                <button
+                  onClick={() => {
+                    const message = encodeURIComponent(
+                      `Olá! Gostaria de fazer o seguinte pedido na ${settings.storeName}:\n\n` +
+                      cartItems.map(item => `- ${item.quantity}x ${item.name} (R$ ${(item.price * item.quantity).toLocaleString('pt-BR')})`).join('\n') +
+                      `\n\n*Total: R$ ${totalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}*`
+                    );
+                    window.open(`https://wa.me/${settings.whatsapp.replace(/\D/g, '')}?text=${message}`, '_blank');
+                  }}
+                  className="w-full py-6 bg-black text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-2xl flex items-center justify-center gap-4 hover:bg-slate-900 transition-all active:scale-[0.98]"
+                >
+                  Continuar no WhatsApp
+                </button>
+                <button
+                  onClick={clearCart}
+                  className="w-full text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-rose-500 transition-colors"
+                >
+                  Limpar Sacola
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       <style>{`

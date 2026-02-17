@@ -15,6 +15,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { useSettings } from '../../context/SettingsContext';
+import { useCart } from '../../context/CartContext';
 import { Product } from '../../types';
 import { apiService } from '../../services/api';
 
@@ -28,6 +29,8 @@ const PublicProduct: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isLiked, setIsLiked] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const [quantity, setQuantity] = useState(1);
+  const { addItem } = useCart();
 
   // IA States
   const [isTryOnModalOpen, setIsTryOnModalOpen] = useState(false);
@@ -220,9 +223,33 @@ const PublicProduct: React.FC = () => {
             </div>
           )}
 
-          <button className="w-full py-6 bg-black text-white rounded-full font-black text-sm uppercase tracking-[0.2em] shadow-2xl flex items-center justify-center gap-4 active:scale-95 transition-all">
-            <ShoppingBag size={20} /> Adicionar ao Carrinho
-          </button>
+          <div className="space-y-6">
+            <div className="flex items-center gap-6">
+              <div className="flex items-center bg-slate-50 rounded-2xl p-2 border border-slate-100">
+                <button
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white hover:shadow-sm transition-all font-bold text-slate-400 hover:text-black"
+                >
+                  -
+                </button>
+                <span className="w-12 text-center font-black text-sm">{quantity}</span>
+                <button
+                  onClick={() => setQuantity(quantity + 1)}
+                  className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white hover:shadow-sm transition-all font-bold text-slate-400 hover:text-black"
+                >
+                  +
+                </button>
+              </div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Quantidade</p>
+            </div>
+
+            <button
+              onClick={() => addItem(product, quantity)}
+              className="w-full py-6 bg-black text-white rounded-full font-black text-sm uppercase tracking-[0.2em] shadow-2xl flex items-center justify-center gap-4 active:scale-95 transition-all"
+            >
+              <ShoppingBag size={20} /> Adicionar ao Carrinho
+            </button>
+          </div>
         </section>
       </main>
 
