@@ -294,11 +294,11 @@ const PublicStore: React.FC = () => {
                 className="group cursor-pointer flex flex-col"
                 onClick={() => openProduct(product)}
               >
-                <div className="aspect-[3/4] overflow-hidden bg-slate-100 relative mb-6">
+                <div className="aspect-[4/5] p-6 overflow-hidden bg-slate-50/50 relative mb-6 flex items-center justify-center rounded-[2rem] border border-slate-100 group-hover:shadow-xl transition-all duration-700">
                   <img
                     src={product.image}
                     alt={product.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 grayscale group-hover:grayscale-0"
+                    className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-1000 grayscale group-hover:grayscale-0"
                   />
 
                   {/* Hover Quick Action */}
@@ -317,10 +317,14 @@ const PublicStore: React.FC = () => {
 
                 <div className="space-y-2 px-1">
                   <div className="flex justify-between items-start">
-                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{product.category}</p>
-                    <Heart size={16} className="text-slate-300 hover:text-rose-500 cursor-pointer transition-colors" />
+                    <div className="px-3 py-1 bg-slate-900/90 backdrop-blur rounded-lg text-[8px] font-black text-white uppercase tracking-widest">
+                      {product.category}
+                    </div>
+                    <Heart size={16} className="text-slate-200 hover:text-rose-500 cursor-pointer transition-colors" />
                   </div>
-                  <h3 className="text-lg font-black uppercase tracking-tight text-slate-900 leading-none group-hover:underline underline-offset-4">{product.name}</h3>
+                  <h3 className="text-sm font-black uppercase tracking-tight text-slate-900 mb-1 truncate group-hover:text-black mt-4">
+                    {product.name}
+                  </h3>
                   <p className="text-xl font-black text-slate-900 pt-2 tracking-tighter">
                     R$ {product.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </p>
