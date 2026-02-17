@@ -6,6 +6,7 @@ import {
   Search,
   Filter,
   Sparkles,
+  MessageCircle,
   UserCircle,
   X,
   ChevronRight,
@@ -382,11 +383,18 @@ const PublicStore: React.FC = () => {
         </div>
       </footer>
 
-      {/* Floating AI Stylist Assistant (Public View) */}
-      <button className="fixed bottom-10 right-10 z-[150] w-20 h-20 bg-black text-white rounded-full flex items-center justify-center shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] hover:scale-110 active:scale-90 transition-all group overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-tr from-indigo-600/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-        <Sparkles size={32} className="relative z-10 group-hover:rotate-12 transition-transform" />
-      </button>
+      {/* Floating WhatsApp Contact (Public View) */}
+      {settings.whatsapp && (
+        <a
+          href={`https://wa.me/${settings.whatsapp.replace(/\D/g, '')}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="fixed bottom-10 right-10 z-[150] w-20 h-20 bg-[#25D366] text-white rounded-full flex items-center justify-center shadow-[0_20px_60px_-15px_rgba(37,211,102,0.5)] hover:scale-110 active:scale-90 transition-all group overflow-hidden"
+        >
+          <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <MessageCircle size={36} className="relative z-10 fill-white group-hover:rotate-12 transition-transform" />
+        </a>
+      )}
 
       <style>{`
         @keyframes slow-zoom {

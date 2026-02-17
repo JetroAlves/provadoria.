@@ -200,6 +200,20 @@ const Settings: React.FC = () => {
                     </div>
                   </div>
 
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-2">
+                      <label className="text-xs font-black uppercase tracking-widest text-slate-400">WhatsApp da Loja</label>
+                      <input
+                        type="text"
+                        value={formData.whatsapp || ''}
+                        onChange={(e) => handleInputChange('whatsapp', e.target.value)}
+                        placeholder="Ex: 5511999999999"
+                        className="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-black/5 outline-none"
+                      />
+                    </div>
+                    <div className="hidden md:block"></div>
+                  </div>
+
                   <div className="space-y-6">
                     <label className="text-xs font-black uppercase tracking-widest text-slate-400">Logomarca da Loja</label>
                     <div className="flex items-center gap-6">
@@ -555,8 +569,8 @@ const Settings: React.FC = () => {
 
           </div>
         </main>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 };
 

@@ -31,6 +31,7 @@ export interface StoreSettings {
   bannerDeskUrl?: string;
   bannerMobileUrl?: string;
   heroTitle?: string;
+  whatsapp?: string;
 }
 
 interface SettingsContextType {
@@ -83,6 +84,7 @@ const DEFAULT_SETTINGS: StoreSettings = {
   bannerDeskUrl: '',
   bannerMobileUrl: '',
   heroTitle: '',
+  whatsapp: '',
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -128,6 +130,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         bannerDeskUrl: pRes.data?.banner_desk_url || '',
         bannerMobileUrl: pRes.data?.banner_mobile_url || '',
         heroTitle: pRes.data?.hero_title || '',
+        whatsapp: pRes.data?.whatsapp || '',
       });
 
       if (cRes.data) {
@@ -194,6 +197,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         bannerDeskUrl: profile.banner_desk_url || '',
         bannerMobileUrl: profile.banner_mobile_url || '',
         heroTitle: profile.hero_title || '',
+        whatsapp: profile.whatsapp || '',
       });
 
       if (cRes.data) {
@@ -244,6 +248,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       banner_desk_url: newSettings.bannerDeskUrl,
       banner_mobile_url: newSettings.bannerMobileUrl,
       hero_title: newSettings.heroTitle,
+      whatsapp: newSettings.whatsapp,
     });
 
     if (error) throw error;
