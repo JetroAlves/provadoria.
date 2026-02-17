@@ -12,7 +12,11 @@ import {
   Upload,
   Loader2,
   Check,
-  AlertCircle
+  AlertCircle,
+  Plus,
+  Minus,
+  Trash2,
+  MessageCircle
 } from 'lucide-react';
 import { useSettings } from '../../context/SettingsContext';
 import { useCart } from '../../context/CartContext';
@@ -30,7 +34,9 @@ const PublicProduct: React.FC = () => {
   const [isLiked, setIsLiked] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [quantity, setQuantity] = useState(1);
-  const { addItem } = useCart();
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [addFeedback, setAddFeedback] = useState(false);
+  const { cartItems, totalItems, totalPrice, addItem, updateQuantity, removeItem, clearCart } = useCart();
 
   // IA States
   const [isTryOnModalOpen, setIsTryOnModalOpen] = useState(false);
@@ -176,6 +182,17 @@ const PublicProduct: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsCartOpen(true)}
+            className="p-2 rounded-full hover:bg-slate-50 text-slate-900 transition-all relative"
+          >
+            <ShoppingBag size={24} />
+            {totalItems > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-black text-white text-[10px] flex items-center justify-center rounded-full border-2 border-white font-black animate-in zoom-in">
+                {totalItems}
+              </span>
+            )}
+          </button>
           <button onClick={() => { navigator.clipboard.writeText(window.location.href); setIsCopied(true); setTimeout(() => setIsCopied(false), 2000) }} className={`p-3 rounded-full transition-all ${isCopied ? 'bg-black text-white' : 'hover:bg-slate-50'}`}>{isCopied ? <Check size={20} /> : <Share2 size={20} />}</button>
           <button onClick={() => setIsLiked(!isLiked)} className={`p-3 rounded-full transition-all ${isLiked ? 'text-[#E11D48]' : 'text-slate-900'}`}><Heart size={22} fill={isLiked ? "currentColor" : "none"} /></button>
         </div>
@@ -244,14 +261,129 @@ const PublicProduct: React.FC = () => {
             </div>
 
             <button
-              onClick={() => addItem(product, quantity)}
-              className="w-full py-6 bg-black text-white rounded-full font-black text-sm uppercase tracking-[0.2em] shadow-2xl flex items-center justify-center gap-4 active:scale-95 transition-all"
+              onClick={() => {
+                addItem(product, quantity);
+                setQuantity(1);
+                setAddFeedback(true);
+                setTimeout(() => setAddFeedback(false), 3000);
+                setTimeout(() => setIsCartOpen(true), 500); // Open cart after a short delay
+              }}
+              className={`w-full py-6 rounded-full font-black text-sm uppercase tracking-[0.2em] shadow-2xl flex items-center justify-center gap-4 active:scale-95 transition-all ${addFeedback ? 'bg-green-500 text-white' : 'bg-black text-white'}`}
             >
-              <ShoppingBag size={20} /> Adicionar ao Carrinho
+              {addFeedback ? <Check size={20} /> : <ShoppingBag size={20} />}
+              {addFeedback ? 'Adicionado com Sucesso!' : 'Adicionar ao Carrinho'}
             </button>
           </div>
         </section>
       </main>
+
+      {/* Floating WhatsApp Control (Public View) */}
+      <div className="fixed bottom-10 right-10 z-[150]">
+        {settings.whatsapp && (
+          <a
+            href={`https://wa.me/${settings.whatsapp.replace(/\D/g, '')}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-16 h-16 bg-[#25D366] text-white rounded-full flex items-center justify-center shadow-xl hover:scale-110 active:scale-90 transition-all group relative overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <MessageCircle size={28} className="relative z-10 fill-white group-hover:rotate-12 transition-transform" />
+          </a>
+        )}
+      </div>
+
+      {/* CART DRAWER */}
+      {isCartOpen && (
+        <div className="fixed inset-0 z-[300] flex justify-end">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-in fade-in" onClick={() => setIsCartOpen(false)} />
+          <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-500">
+            <div className="p-8 border-b border-slate-50 flex items-center justify-between">
+              <h2 className="text-2xl font-black uppercase tracking-tighter text-slate-900">Sua Sacola <span className="text-[#E11D48]">.</span></h2>
+              <button
+                onClick={() => setIsCartOpen(false)}
+                className="p-3 bg-slate-50 rounded-full text-slate-400 hover:text-black transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-8 no-scrollbar text-slate-900">
+              {cartItems.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-center space-y-4 opacity-40">
+                  <ShoppingBag size={48} />
+                  <p className="text-xs font-bold uppercase tracking-widest text-slate-900">Sua sacola está vazia</p>
+                </div>
+              ) : (
+                <div className="space-y-8">
+                  {cartItems.map((item) => (
+                    <div key={item.id} className="flex gap-6 group">
+                      <div className="w-24 h-24 bg-slate-50 rounded-2xl overflow-hidden border border-slate-100 shrink-0">
+                        <img src={item.image} className="w-full h-full object-cover" alt={item.name} />
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <div className="flex justify-between items-start">
+                          <h4 className="text-sm font-black uppercase tracking-tight pr-4 text-slate-900">{item.name}</h4>
+                          <button onClick={() => removeItem(item.id)} className="text-slate-300 hover:text-rose-500 transition-colors">
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                        <p className="text-xs font-bold text-slate-400">R$ {item.price.toLocaleString('pt-BR')}</p>
+
+                        <div className="flex items-center gap-4 pt-2">
+                          <div className="flex items-center bg-slate-50 rounded-lg p-1 border border-slate-100">
+                            <button
+                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                              className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-md transition-all text-slate-400"
+                            >
+                              <Minus size={12} />
+                            </button>
+                            <span className="w-8 text-center text-[11px] font-black text-slate-900">{item.quantity}</span>
+                            <button
+                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                              className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-md transition-all text-slate-400"
+                            >
+                              <Plus size={12} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {cartItems.length > 0 && (
+              <div className="p-8 bg-slate-50 border-t border-slate-100 space-y-6">
+                <div className="flex justify-between items-center">
+                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Total Estimado</p>
+                  <p className="text-3xl font-black tracking-tighter text-slate-900">R$ {totalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                </div>
+
+                <button
+                  onClick={() => {
+                    const message = encodeURIComponent(
+                      `Olá! Gostaria de fazer o seguinte pedido na ${settings.storeName}:\n\n` +
+                      cartItems.map(item => `- ${item.quantity}x ${item.name} (R$ ${(item.price * item.quantity).toLocaleString('pt-BR')})`).join('\n') +
+                      `\n\n*Total: R$ ${totalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}*`
+                    );
+                    window.open(`https://wa.me/${settings.whatsapp.replace(/\D/g, '')}?text=${message}`, '_blank');
+                  }}
+                  className="w-full py-6 bg-black text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-2xl flex items-center justify-center gap-4 hover:bg-slate-900 transition-all active:scale-[0.98]"
+                >
+                  Continuar no WhatsApp
+                </button>
+                <button
+                  onClick={clearCart}
+                  className="w-full text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-rose-500 transition-colors"
+                >
+                  Limpar Sacola
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* MODAL: PROVADOR VIRTUAL */}
       {isTryOnModalOpen && (

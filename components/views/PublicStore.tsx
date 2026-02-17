@@ -139,9 +139,16 @@ const PublicStore: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-6">
-          <button className={`p-2 transition-transform hover:scale-110 relative ${scrolled ? 'text-slate-900' : 'text-white'}`}>
+          <button
+            onClick={() => setIsCartOpen(true)}
+            className={`p-2 transition-transform hover:scale-110 relative ${scrolled ? 'text-slate-900' : 'text-white'}`}
+          >
             <ShoppingBag size={24} />
-            <span className="absolute -top-1 -right-1 w-5 h-5 bg-black text-white text-[10px] flex items-center justify-center rounded-full border-2 border-white font-black">0</span>
+            {totalItems > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-black text-white text-[10px] flex items-center justify-center rounded-full border-2 border-white font-black animate-in zoom-in">
+                {totalItems}
+              </span>
+            )}
           </button>
         </div>
       </nav>
@@ -391,21 +398,8 @@ const PublicStore: React.FC = () => {
         </div>
       </footer>
 
-      {/* Floating WhatsApp/Cart Controls (Public View) */}
+      {/* Floating WhatsApp Control (Public View) */}
       <div className="fixed bottom-10 right-10 z-[150] flex flex-col gap-4">
-        {/* Cart Button */}
-        <button
-          onClick={() => setIsCartOpen(true)}
-          className="w-16 h-16 bg-white border border-slate-100 text-black rounded-full flex items-center justify-center shadow-xl hover:scale-110 active:scale-90 transition-all group relative"
-        >
-          {totalItems > 0 && (
-            <span className="absolute -top-1 -right-1 w-6 h-6 bg-[#E11D48] text-white text-[10px] font-black rounded-full flex items-center justify-center animate-in zoom-in">
-              {totalItems}
-            </span>
-          )}
-          <ShoppingBag size={24} className="group-hover:rotate-12 transition-transform" />
-        </button>
-
         {/* WhatsApp Button */}
         {settings.whatsapp && (
           <a
