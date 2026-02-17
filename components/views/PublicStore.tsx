@@ -38,7 +38,9 @@ const PublicStore: React.FC = () => {
     return products.filter(p => {
       const isActive = p.status === 'active' && p.stock > 0;
       const matchesCategory = activeCategory === 'Tudo' || p.category === activeCategory;
-      const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (p.description || '').toLowerCase().includes(searchTerm.toLowerCase());
       return isActive && matchesCategory && matchesSearch;
     });
   }, [products, activeCategory, searchTerm]);
@@ -102,7 +104,7 @@ const PublicStore: React.FC = () => {
         <div className="flex items-center gap-3 group cursor-pointer" onClick={() => navigate(`/loja/${storeSlug}`)}>
           <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 overflow-hidden ${scrolled ? 'bg-black text-white' : 'bg-white text-black'}`}>
             {settings.logoUrl ? (
-              <img src={settings.logoUrl} alt={settings.storeName} className="w-full h-full object-contain" />
+              <img src={settings.logoUrl} alt={settings.storeName} className="w-full h-full object-cover" />
             ) : (
               <span className="font-black text-xl tracking-tighter">{settings.storeName.charAt(0)}</span>
             )}
@@ -153,20 +155,20 @@ const PublicStore: React.FC = () => {
               <span className="h-[1px] w-12 bg-white/60"></span>
               <h2 className="text-white/60 text-xs font-black uppercase tracking-[0.4em]">Essential / {settings.brandStyle}</h2>
             </div>
-            <h1 className="text-white text-6xl md:text-9xl font-black mb-8 tracking-tighter leading-[0.85] uppercase">
-              Curadoria <br /> <span className="text-transparent border-text-white">Premium</span>
-            </h1>
+            {settings.heroTitle ? (
+              <h1 className="text-white text-6xl md:text-9xl font-black mb-8 tracking-tighter leading-[0.85] uppercase">
+                {settings.heroTitle.split(' ').slice(0, -1).join(' ')} <br />
+                <span className="text-transparent border-text-white">{settings.heroTitle.split(' ').slice(-1)}</span>
+              </h1>
+            ) : (
+              <h1 className="text-white text-6xl md:text-9xl font-black mb-8 tracking-tighter leading-[0.85] uppercase">
+                Curadoria <br /> <span className="text-transparent border-text-white">Premium</span>
+              </h1>
+            )}
             <p className="text-white/70 max-w-lg text-lg md:text-xl leading-relaxed mb-12 font-medium italic">
               {settings.publicStoreDescription || settings.description}
             </p>
-            <div className="flex gap-4">
-              <button className="px-12 py-5 bg-white text-black font-black text-xs uppercase tracking-widest hover:bg-slate-100 transition-all shadow-2xl active:scale-95">
-                Ver Coleção
-              </button>
-              <button className="px-12 py-5 bg-transparent border border-white/30 text-white font-black text-xs uppercase tracking-widest hover:bg-white/10 transition-all backdrop-blur-md">
-                Nossa História
-              </button>
-            </div>
+            {/* Buttons removed as requested */}
           </div>
         </div>
       </section>

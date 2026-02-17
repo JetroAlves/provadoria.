@@ -367,6 +367,16 @@ const Settings: React.FC = () => {
                         className="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm min-h-[100px] font-medium resize-none focus:ring-2 focus:ring-black/5 outline-none"
                       />
                     </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-black uppercase tracking-widest text-slate-400">Título da Vitrine (Hero)</label>
+                      <input
+                        type="text"
+                        value={formData.heroTitle}
+                        onChange={(e) => handleInputChange('heroTitle', e.target.value)}
+                        placeholder="Ex: Curadoria Premium"
+                        className="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-black/5 outline-none"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>

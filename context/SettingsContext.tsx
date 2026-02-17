@@ -30,6 +30,7 @@ export interface StoreSettings {
   logoUrl?: string;
   bannerDeskUrl?: string;
   bannerMobileUrl?: string;
+  heroTitle?: string;
 }
 
 interface SettingsContextType {
@@ -81,6 +82,7 @@ const DEFAULT_SETTINGS: StoreSettings = {
   logoUrl: '',
   bannerDeskUrl: '',
   bannerMobileUrl: '',
+  heroTitle: '',
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -125,6 +127,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         logoUrl: pRes.data?.logo_url || '',
         bannerDeskUrl: pRes.data?.banner_desk_url || '',
         bannerMobileUrl: pRes.data?.banner_mobile_url || '',
+        heroTitle: pRes.data?.hero_title || '',
       });
 
       if (cRes.data) {
@@ -190,6 +193,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         logoUrl: profile.logo_url || '',
         bannerDeskUrl: profile.banner_desk_url || '',
         bannerMobileUrl: profile.banner_mobile_url || '',
+        heroTitle: profile.hero_title || '',
       });
 
       if (cRes.data) {
@@ -239,6 +243,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       logo_url: newSettings.logoUrl,
       banner_desk_url: newSettings.bannerDeskUrl,
       banner_mobile_url: newSettings.bannerMobileUrl,
+      hero_title: newSettings.heroTitle,
     });
 
     if (error) throw error;
