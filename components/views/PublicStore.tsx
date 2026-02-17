@@ -444,7 +444,7 @@ const PublicStore: React.FC = () => {
                       </div>
                       <div className="flex-1 space-y-2">
                         <div className="flex justify-between items-start">
-                          <h4 className="text-sm font-black uppercase tracking-tight pr-4">{item.name}</h4>
+                          <h4 className="text-sm font-black uppercase tracking-tight pr-4 text-slate-900">{item.name}</h4>
                           <button onClick={() => removeItem(item.id)} className="text-slate-300 hover:text-rose-500 transition-colors">
                             <Trash2 size={16} />
                           </button>
@@ -459,7 +459,7 @@ const PublicStore: React.FC = () => {
                             >
                               <Minus size={12} />
                             </button>
-                            <span className="w-8 text-center text-[11px] font-black">{item.quantity}</span>
+                            <span className="w-8 text-center text-[11px] font-black text-slate-900">{item.quantity}</span>
                             <button
                               onClick={() => updateQuantity(item.id, item.quantity + 1)}
                               className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-md transition-all text-slate-400"
@@ -479,7 +479,7 @@ const PublicStore: React.FC = () => {
               <div className="p-8 bg-slate-50 border-t border-slate-100 space-y-6">
                 <div className="flex justify-between items-center">
                   <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Total Estimado</p>
-                  <p className="text-3xl font-black tracking-tighter">R$ {totalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                  <p className="text-3xl font-black tracking-tighter text-slate-900">R$ {totalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                 </div>
 
                 <button
