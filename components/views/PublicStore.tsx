@@ -130,17 +130,6 @@ const PublicStore: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-6">
-          <div className="relative group hidden md:block">
-            <Search className={`absolute left-0 top-1/2 -translate-y-1/2 transition-colors ${scrolled ? 'text-slate-400' : 'text-white/50'}`} size={18} />
-            <input
-              type="text"
-              placeholder="Buscar na coleção..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className={`bg-transparent border-b pl-7 pr-4 py-1 text-sm outline-none transition-all w-40 focus:w-64 ${scrolled ? 'border-slate-200 text-black focus:border-black' : 'border-white/20 text-white focus:border-white'
-                }`}
-            />
-          </div>
           <button className={`p-2 transition-transform hover:scale-110 relative ${scrolled ? 'text-slate-900' : 'text-white'}`}>
             <ShoppingBag size={24} />
             <span className="absolute -top-1 -right-1 w-5 h-5 bg-black text-white text-[10px] flex items-center justify-center rounded-full border-2 border-white font-black">0</span>
@@ -188,51 +177,57 @@ const PublicStore: React.FC = () => {
         </div>
       </section>
 
-      {/* Category Filter & Advanced Filters */}
-      <div className="sticky top-0 md:top-[88px] z-50 bg-white/90 backdrop-blur-xl border-b border-slate-100 overflow-hidden shadow-sm">
+      {/* Prominent Search & Filters Bar */}
+      <div className="sticky top-0 md:top-[88px] z-50 bg-white/90 backdrop-blur-xl border-b border-slate-100 py-4 shadow-sm">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-4">
-            <div className="flex items-center gap-8 overflow-x-auto no-scrollbar shrink-0">
-              <button
-                onClick={() => setActiveCategory('Tudo')}
-                className={`text-[11px] font-black uppercase tracking-[0.2em] transition-all relative py-2 ${activeCategory === 'Tudo' ? 'text-black' : 'text-slate-400 hover:text-black'}`}
-              >
-                Tudo
-                {activeCategory === 'Tudo' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-black"></span>}
-              </button>
-              {categories.filter(c => c.status === 'active').map(cat => (
-                <button
-                  key={cat.id}
-                  onClick={() => setActiveCategory(cat.name)}
-                  className={`text-[11px] font-black uppercase tracking-[0.2em] whitespace-nowrap transition-all relative py-2 ${activeCategory === cat.name ? 'text-black' : 'text-slate-400 hover:text-black'}`}
-                >
-                  {cat.name}
-                  {activeCategory === cat.name && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-black"></span>}
-                </button>
-              ))}
+          <div className="flex flex-col lg:flex-row gap-4 p-2 bg-white rounded-[2rem] border border-slate-100 shadow-sm relative z-30">
+            <div className="relative flex-1 group">
+              <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-black transition-colors" size={20} />
+              <input
+                type="text"
+                placeholder="Buscar por nome, SKU ou tag..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-16 pr-6 py-5 bg-slate-50 border-none rounded-2xl text-sm font-bold focus:ring-4 focus:ring-black/5 outline-none transition-all placeholder:text-slate-300"
+              />
             </div>
 
-            <div className="flex items-center gap-4 ml-auto">
-              <div className="relative">
+            <div className="flex flex-wrap gap-2">
+              <div className="relative min-w-[180px]">
+                <select
+                  value={activeCategory}
+                  onChange={(e) => setActiveCategory(e.target.value)}
+                  className="w-full appearance-none pl-6 pr-12 py-5 bg-slate-50 border-none rounded-2xl text-sm font-black uppercase tracking-widest focus:ring-4 focus:ring-black/5 outline-none cursor-pointer"
+                >
+                  <option value="Tudo">Todas Categorias</option>
+                  {categories.filter(c => c.status === 'active').map(cat => (
+                    <option key={cat.id} value={cat.name}>{cat.name}</option>
+                  ))}
+                </select>
+                <ChevronRight className="absolute right-6 top-1/2 -translate-y-1/2 rotate-90 text-slate-400 pointer-events-none" size={16} />
+              </div>
+
+              <div className="relative min-w-[180px]">
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="bg-transparent text-[11px] font-black uppercase tracking-widest text-slate-500 outline-none cursor-pointer py-2 pl-2 pr-8 appearance-none border-b border-transparent hover:border-slate-200 transition-colors"
+                  className="w-full appearance-none pl-6 pr-12 py-5 bg-slate-50 border-none rounded-2xl text-sm font-black uppercase tracking-widest focus:ring-4 focus:ring-black/5 outline-none cursor-pointer"
                 >
                   <option value="newest">Mais Recentes</option>
                   <option value="price-asc">Menor Preço</option>
                   <option value="price-desc">Maior Preço</option>
                   <option value="name">Nome (A-Z)</option>
                 </select>
-                <ChevronRight className="absolute right-0 top-1/2 -translate-y-1/2 rotate-90 text-slate-400 pointer-events-none" size={14} />
+                <ChevronRight className="absolute right-6 top-1/2 -translate-y-1/2 rotate-90 text-slate-400 pointer-events-none" size={16} />
               </div>
 
               <button
                 onClick={() => setIsFilterOpen(!isFilterOpen)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all ${isFilterOpen ? 'bg-black text-white border-black' : 'bg-white text-slate-900 border-slate-200 hover:border-black'}`}
+                className={`flex items-center gap-3 px-8 py-5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all border ${isFilterOpen ? 'bg-black text-white border-black shadow-xl' : 'bg-slate-50 text-slate-600 border-transparent hover:bg-slate-100'
+                  }`}
               >
-                <Filter size={14} />
-                <span className="text-[10px] font-black uppercase tracking-widest">Filtros</span>
+                <Filter size={18} />
+                Filtros
               </button>
             </div>
           </div>
