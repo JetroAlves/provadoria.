@@ -40,12 +40,26 @@ const Settings: React.FC = () => {
   // Local state for form inputs before saving
   const [formData, setFormData] = useState(settings);
 
-  // Sync local formData when settings are loaded from context
+  // Sync local formData ONLY when settings are loaded initially or when context is updated externally (and we're not saving)
   React.useEffect(() => {
-    if (settings.storeName !== 'Carregando...') {
+    if (settings.storeName !== 'Carregando...' && !isSaving) {
       setFormData(settings);
     }
-  }, [settings]);
+  }, [settings, isSaving]);
+
+  const handleToggleChange = async (field: string, value: boolean) => {
+    // Optimistic update
+    setFormData(prev => ({ ...prev, [field]: value }));
+
+    try {
+      await updateSettings({ [field]: value });
+    } catch (err: any) {
+      console.error(`Erro ao salvar ${field}:`, err);
+      setError(`Falha ao salvar: ${err.message}`);
+      // Rollback on error
+      setFormData(prev => ({ ...prev, [field]: settings[field as keyof typeof settings] }));
+    }
+  };
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -306,7 +320,7 @@ const Settings: React.FC = () => {
                         type="checkbox"
                         className="sr-only peer"
                         checked={formData.publicStoreActive}
-                        onChange={(e) => handleInputChange('publicStoreActive', e.target.checked)}
+                        onChange={(e) => handleToggleChange('publicStoreActive', e.target.checked)}
                       />
                       <div className="w-14 h-7 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-6 after:transition-all peer-checked:bg-emerald-600"></div>
                     </label>
@@ -480,7 +494,7 @@ const Settings: React.FC = () => {
                         type="checkbox"
                         className="sr-only peer"
                         checked={formData.virtualTryOnActive}
-                        onChange={(e) => handleInputChange('virtualTryOnActive', e.target.checked)}
+                        onChange={(e) => handleToggleChange('virtualTryOnActive', e.target.checked)}
                       />
                       <div className="w-14 h-7 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-6 after:transition-all peer-checked:bg-indigo-600"></div>
                     </label>

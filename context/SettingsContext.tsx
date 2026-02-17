@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { Product, Category, BrandAvatar } from '../types';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
@@ -404,15 +404,24 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setAvatars(prev => prev.map(a => ({ ...a, is_default: a.id === id })));
   };
 
+  const contextValue = useMemo(() => ({
+    settings, products, categories, savedLooks, aiDrafts, avatars, isLoading,
+    updateSettings, addProduct, updateProduct, deleteProduct,
+    addCategory, updateCategory, deleteCategory, reorderCategories,
+    saveLook, deleteLook, addDraft, deleteDraft,
+    addAvatar, deleteAvatar, setDefaultAvatar, refreshData: fetchData,
+    loadPublicStore
+  }), [
+    settings, products, categories, savedLooks, aiDrafts, avatars, isLoading,
+    updateSettings, addProduct, updateProduct, deleteProduct,
+    addCategory, updateCategory, deleteCategory, reorderCategories,
+    saveLook, deleteLook, addDraft, deleteDraft,
+    addAvatar, deleteAvatar, setDefaultAvatar, fetchData,
+    loadPublicStore
+  ]);
+
   return (
-    <SettingsContext.Provider value={{
-      settings, products, categories, savedLooks, aiDrafts, avatars, isLoading,
-      updateSettings, addProduct, updateProduct, deleteProduct,
-      addCategory, updateCategory, deleteCategory, reorderCategories,
-      saveLook, deleteLook, addDraft, deleteDraft,
-      addAvatar, deleteAvatar, setDefaultAvatar, refreshData: fetchData,
-      loadPublicStore
-    }}>
+    <SettingsContext.Provider value={contextValue}>
       {children}
     </SettingsContext.Provider>
   );
