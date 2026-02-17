@@ -24,7 +24,7 @@ const CATEGORIES = ['Tudo', 'Vestidos', 'Casacos', 'CalÃ§as', 'Camisas', 'AcessÃ
 const PublicStore: React.FC = () => {
   const { storeSlug } = useParams();
   const navigate = useNavigate();
-  const { settings, products } = useSettings();
+  const { settings, products, isLoading, loadPublicStore } = useSettings();
 
   const [activeCategory, setActiveCategory] = useState('Tudo');
   const [searchTerm, setSearchTerm] = useState('');
@@ -44,6 +44,12 @@ const PublicStore: React.FC = () => {
   }, [products, activeCategory, searchTerm]);
 
   useEffect(() => {
+    if (storeSlug) {
+      loadPublicStore(storeSlug);
+    }
+  }, [storeSlug]);
+
+  useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
@@ -52,6 +58,22 @@ const PublicStore: React.FC = () => {
   const openProduct = (p: Product) => {
     navigate(`/loja/${storeSlug}/produto/${p.id}`);
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center space-y-6">
+        <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center shadow-2xl animate-bounce">
+          <span className="text-white font-black text-3xl tracking-tighter">P</span>
+        </div>
+        <div className="flex flex-col items-center">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 border-2 border-slate-100 border-t-[#E11D48] rounded-full animate-spin"></div>
+            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">Provadoria Intelligence</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!isAvailable) {
     return (

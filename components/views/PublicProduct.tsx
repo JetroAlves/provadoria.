@@ -21,7 +21,7 @@ import { apiService } from '../../services/api';
 const PublicProduct: React.FC = () => {
   const { storeSlug, productId } = useParams();
   const navigate = useNavigate();
-  const { settings, products, isLoading: isContextLoading } = useSettings();
+  const { settings, products, isLoading: isContextLoading, loadPublicStore } = useSettings();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [internalLoading, setInternalLoading] = useState(true);
@@ -36,6 +36,12 @@ const PublicProduct: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [tryOnResult, setTryOnResult] = useState<string | null>(null);
   const [stylistResult, setStylistResult] = useState<any | null>(null);
+
+  useEffect(() => {
+    if (storeSlug) {
+      loadPublicStore(storeSlug);
+    }
+  }, [storeSlug]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 

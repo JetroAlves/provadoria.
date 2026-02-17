@@ -56,6 +56,7 @@ interface SettingsContextType {
   deleteAvatar: (id: string) => Promise<void>;
   setDefaultAvatar: (id: string) => Promise<void>;
   refreshData: () => Promise<void>;
+  loadPublicStore: (slug: string) => Promise<void>;
 }
 
 const DEFAULT_SETTINGS: StoreSettings = {
@@ -153,7 +154,71 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
-  useEffect(() => { fetchData(); }, [user]);
+  const loadPublicStore = async (slug: string) => {
+    setIsLoading(true);
+    try {
+      const { data: profile, error: pError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('store_slug', slug)
+        .single();
+
+      if (pError || !profile) {
+        setSettings(DEFAULT_SETTINGS);
+        return;
+      }
+
+      const [cRes, prRes] = await Promise.all([
+        supabase.from('categories').select('*').eq('user_id', profile.id).order('display_order'),
+        supabase.from('products').select('*').eq('user_id', profile.id).order('created_at', { ascending: false })
+      ]);
+
+      setSettings({
+        ...DEFAULT_SETTINGS,
+        storeName: profile.store_name || '',
+        description: profile.description || '',
+        brandStyle: profile.brand_style || 'Minimalista',
+        brandTone: profile.brand_tone || 'Luxo',
+        targetAudience: profile.target_audience || '',
+        publicStoreSlug: profile.store_slug || '',
+        publicStoreActive: profile.public_store_active ?? true,
+        standardHashtags: profile.standard_hashtags || '',
+        standardCTA: profile.standard_cta || '',
+        virtualTryOnActive: profile.virtual_tryon_active ?? true,
+        seoTitle: profile.seo_title || '',
+        seoDescription: profile.seo_description || '',
+        logoUrl: profile.logo_url || '',
+        bannerDeskUrl: profile.banner_desk_url || '',
+        bannerMobileUrl: profile.banner_mobile_url || '',
+      });
+
+      if (cRes.data) {
+        setCategories(cRes.data.map(c => ({
+          id: c.id, name: c.name, slug: c.slug, status: c.status, order: c.display_order
+        })));
+      }
+
+      if (prRes.data) {
+        setProducts(prRes.data.map(p => ({
+          id: p.id, name: p.name, category: p.category || 'Geral',
+          price: Number(p.price), stock: p.stock, image: p.image_url,
+          status: p.status, description: p.description, lastGenerated: p.last_generated_at,
+          gender: p.gender || 'Feminino',
+          wearableType: p.wearable_type || undefined
+        })));
+      }
+    } catch (err) {
+      console.error('Public fetch error:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchData();
+    }
+  }, [user]);
 
   const updateSettings = async (newSettings: Partial<StoreSettings>) => {
     if (!user) return;
@@ -340,7 +405,8 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       updateSettings, addProduct, updateProduct, deleteProduct,
       addCategory, updateCategory, deleteCategory, reorderCategories,
       saveLook, deleteLook, addDraft, deleteDraft,
-      addAvatar, deleteAvatar, setDefaultAvatar, refreshData: fetchData
+      addAvatar, deleteAvatar, setDefaultAvatar, refreshData: fetchData,
+      loadPublicStore
     }}>
       {children}
     </SettingsContext.Provider>
