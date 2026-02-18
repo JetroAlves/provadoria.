@@ -19,7 +19,9 @@ export enum AppRoute {
   SETTINGS = '/settings',
   PUBLIC_STORE = '/loja/:storeSlug',
   PUBLIC_PRODUCT = '/loja/:storeSlug/produto/:productId',
-  PRODUCT_SHOWCASE = '/product-showcase'
+  PRODUCT_SHOWCASE = '/product-showcase',
+  TERMS = '/termos',
+  PRIVACY = '/privacidade'
 }
 
 export interface NavItem {

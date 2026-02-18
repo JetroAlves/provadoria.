@@ -21,6 +21,8 @@ import ProductShowcase from './components/views/ProductShowcase';
 import Login from './components/views/Login';
 import Register from './components/views/Register';
 import Onboarding from './components/views/Onboarding';
+import Terms from './components/views/Terms';
+import Privacy from './components/views/Privacy';
 import { SettingsProvider } from './context/SettingsContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { GalleryProvider } from './context/GalleryContext';
@@ -90,6 +92,10 @@ const AppContent: React.FC = () => {
       {/* 4. VITRINES PÚBLICAS DAS LOJAS */}
       <Route path="/loja/:storeSlug" element={<PublicStore />} />
       <Route path="/loja/:storeSlug/produto/:productId" element={<PublicProduct />} />
+
+      {/* 5. PÁGINAS LEGAIS */}
+      <Route path={AppRoute.TERMS} element={<Terms />} />
+      <Route path={AppRoute.PRIVACY} element={<Privacy />} />
 
       {/* Redirecionamento padrão para Home se rota não existir */}
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -11,7 +11,8 @@ import {
   ChevronRight,
   Loader2,
   CheckCircle2,
-  Check
+  Check,
+  Instagram
 } from 'lucide-react';
 import { AppRoute } from '../../types';
 import { useAuth } from '../../context/AuthContext';
@@ -482,9 +483,24 @@ const LandingPage: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap justify-center gap-12">
-            {['Termos', 'Privacidade', 'Contatos', 'API Docs', 'LinkedIn'].map(item => (
-              <button key={item} className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-black transition-colors">{item}</button>
-            ))}
+            <button
+              onClick={() => navigate(AppRoute.TERMS)}
+              className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-black transition-colors"
+            >
+              Termos
+            </button>
+            <button
+              onClick={() => navigate(AppRoute.PRIVACY)}
+              className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-black transition-colors"
+            >
+              Privacidade
+            </button>
+            <button
+              onClick={() => window.open('https://instagram.com/provadoria', '_blank')}
+              className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-black transition-colors"
+            >
+              <Instagram size={14} /> Instagram
+            </button>
           </div>
 
           <div className="text-right">
