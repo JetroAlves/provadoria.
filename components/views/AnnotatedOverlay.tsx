@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Product } from '../../types';
+import { useSettings } from '../../context/SettingsContext';
 
 interface AnnotatedOverlayProps {
     products: {
@@ -15,6 +16,7 @@ interface AnnotatedOverlayProps {
 }
 
 const AnnotatedOverlay: React.FC<AnnotatedOverlayProps> = ({ products }) => {
+    const { settings } = useSettings();
     // Map items to display with their target positions (normalized 0-100)
     const annotations = [];
 
@@ -97,6 +99,12 @@ const AnnotatedOverlay: React.FC<AnnotatedOverlayProps> = ({ products }) => {
                     </div>
                 );
             })}
+            {/* Branding */}
+            <div className="absolute bottom-10 left-0 right-0 text-center animate-in fade-in duration-1000 slide-in-from-bottom-5">
+                <h2 className="text-3xl md:text-5xl font-light tracking-[0.2em] text-black/80 uppercase" style={{ fontFamily: 'Playfair Display, serif' }}>
+                    {settings.storeName}
+                </h2>
+            </div>
         </div>
     );
 };

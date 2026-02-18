@@ -187,9 +187,9 @@ const CreativeStudio: React.FC = () => {
   }, [state.collectionId]);
 
   const handleGenerateClick = () => {
-    let prompt;
+    let prompt = '';
     if (state.isAnnotatedMode) {
-      prompt = `EXTREME HIGH-END FASHION EDITORIAL. PURE WHITE BACKGROUND. Model perfectly centered. Studio lighting. Vogue aesthetic. No props. Clean background.`;
+      prompt = `HIGH-END PROFESSIONAL FASHION EDITORIAL. Full body shot, model centered and small in frame to allow for whitespace at margins. PURE WHITE BACKGROUND. Minimalist studio lighting. Vogue aesthetic. No props. Clean background.`;
     } else {
       const scene = SCENES.find(s => s.id === state.sceneId);
       prompt = scene?.prompt || '';
@@ -262,6 +262,12 @@ const CreativeStudio: React.FC = () => {
           ctx.fillStyle = '#64748b'; // slate-500
           ctx.fillText(price, textX, y + 25);
         });
+
+        // Draw Store Name (Branding)
+        ctx.font = 'normal 60px "Playfair Display", serif';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'black';
+        ctx.fillText(settings.storeName.toUpperCase(), canvas.width / 2, canvas.height - 100);
 
         resolve(canvas.toDataURL('image/png'));
       };
