@@ -111,7 +111,6 @@ const LandingPage: React.FC = () => {
         <div className="hidden lg:flex items-center gap-12">
           <button onClick={() => scrollToSection('features')} className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-black transition-all hover:translate-y-[-1px]">Recursos</button>
           <button onClick={() => scrollToSection('pricing')} className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-black transition-all hover:translate-y-[-1px]">Preços</button>
-          <button className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-black transition-all hover:translate-y-[-1px]">Empresa</button>
         </div>
 
         <div className="flex items-center gap-3 md:gap-4 shrink-0">
