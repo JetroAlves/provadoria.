@@ -20,7 +20,6 @@ interface CampaignState {
   };
   sceneId: string;
   format: Format;
-  isAnnotatedMode: boolean;
 }
 
 export const useCampaignGenerator = () => {
@@ -39,7 +38,6 @@ export const useCampaignGenerator = () => {
     collectionId: 'verao',
     sceneId: '',
     format: '3:4' as Format, // Default do sistema atual mapeado para editorial
-    isAnnotatedMode: false
   });
 
   const [isGenerating, setIsGenerating] = useState(false);
@@ -132,7 +130,6 @@ export const useCampaignGenerator = () => {
   const setCollection = (id: string) => setState(prev => ({ ...prev, collectionId: id }));
   const setScene = (id: string) => setState(prev => ({ ...prev, sceneId: id }));
   const setFormat = (f: Format) => setState(prev => ({ ...prev, format: f }));
-  const setAnnotatedMode = (val: boolean) => setState(prev => ({ ...prev, isAnnotatedMode: val }));
 
   // Generation Logic
   const generateCampaign = async (scenePrompt: string) => {
@@ -229,7 +226,6 @@ export const useCampaignGenerator = () => {
       setCollection,
       setScene,
       setFormat,
-      setAnnotatedMode,
       generateCampaign
     },
     helpers: {

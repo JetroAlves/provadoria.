@@ -29,7 +29,6 @@ import { useSettings } from '../../context/SettingsContext';
 import { useGallery } from '../../context/GalleryContext';
 import { uploadFile, base64ToBlob } from '../../lib/supabase';
 import { useCampaignGenerator, Gender, Format } from '../../hooks/useCampaignGenerator';
-import AnnotatedOverlay from './AnnotatedOverlay';
 
 // --- CONSTANTS ---
 const SEASON_CATEGORIES = [
@@ -187,133 +186,17 @@ const CreativeStudio: React.FC = () => {
   }, [state.collectionId]);
 
   const handleGenerateClick = () => {
-    let prompt = '';
-    if (state.isAnnotatedMode) {
-      prompt = `HIGH-END PROFESSIONAL FASHION EDITORIAL. Model is SMALL AND CENTERED in frame with WIDE MARGINS on left and right. Full body shot. PURE WHITE BACKGROUND. Minimalist studio lighting. Vogue aesthetic. No props. Clean background. Very high quality.`;
-    } else {
-      const scene = SCENES.find(s => s.id === state.sceneId);
-      prompt = scene?.prompt || '';
-    }
+    const scene = SCENES.find(s => s.id === state.sceneId);
+    const prompt = scene?.prompt || '';
     actions.generateCampaign(prompt);
   };
 
-  const flattenImage = async (imgUrl: string): Promise<string> => {
-    return new Promise((resolve) => {
-      const img = new Image();
-      if (!imgUrl.startsWith('data:')) img.crossOrigin = "anonymous";
-
-      img.onload = () => {
-        try {
-          const canvas = document.createElement('canvas');
-          canvas.width = img.width;
-          canvas.height = img.height;
-          const ctx = canvas.getContext('2d');
-          if (!ctx) return resolve(imgUrl);
-
-          // 1. Fundo e Imagem Base
-          ctx.fillStyle = 'white';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(img, 0, 0);
-
-          const scale = canvas.width / 1000;
-
-          // 2. Coletar Itens
-          const items = [];
-          if (state.selectedProducts.fullbody) {
-            items.push({ p: state.selectedProducts.fullbody, x: 0.7, y: 0.4, side: 'right' });
-          } else {
-            if (state.selectedProducts.top) items.push({ p: state.selectedProducts.top, x: 0.3, y: 0.3, side: 'left' });
-            if (state.selectedProducts.bottom) items.push({ p: state.selectedProducts.bottom, x: 0.7, y: 0.6, side: 'right' });
-          }
-          if (state.selectedProducts.shoes) items.push({ p: state.selectedProducts.shoes, x: 0.3, y: 0.85, side: 'left' });
-          state.selectedProducts.accessories.forEach((acc, i) => {
-            items.push({ p: acc, x: 0.7, y: 0.2 + (i * 0.1), side: 'right' });
-          });
-
-          // 3. Desenhar Anotações
-          items.forEach(item => {
-            const isLeft = item.side === 'left';
-            const px = item.x * canvas.width;
-            const py = item.y * canvas.height;
-            const labelMargin = 0.05 * canvas.width;
-            const labelX = isLeft ? labelMargin : canvas.width - labelMargin;
-
-            // Linha
-            ctx.beginPath();
-            ctx.moveTo(labelX, py);
-            ctx.lineTo(px, py);
-            ctx.strokeStyle = 'rgba(0,0,0,0.15)';
-            ctx.lineWidth = 2 * scale;
-            ctx.stroke();
-
-            // Ponto
-            ctx.beginPath();
-            ctx.arc(px, py, 6 * scale, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(0,0,0,0.5)';
-            ctx.fill();
-
-            // Textos
-            const name = item.p.name.toUpperCase();
-            const price = `R$ ${item.p.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
-
-            const labelSize = Math.round(24 * scale);
-            const priceSize = Math.round(18 * scale);
-
-            ctx.font = `bold ${labelSize}px Inter, sans-serif`;
-            const nameW = ctx.measureText(name).width;
-            ctx.font = `${priceSize}px Inter, sans-serif`;
-            const priceW = ctx.measureText(price).width;
-
-            const boxW = Math.max(nameW, priceW) + (30 * scale);
-            const boxH = labelSize + priceSize + (30 * scale);
-            const boxX = isLeft ? labelX - (10 * scale) : labelX - boxW + (10 * scale);
-            const boxY = py - labelSize - (15 * scale);
-
-            // Box white Background
-            ctx.save();
-            ctx.fillStyle = 'white';
-            ctx.shadowColor = 'rgba(0,0,0,0.1)';
-            ctx.shadowBlur = 15 * scale;
-            ctx.fillRect(boxX, boxY, boxW, boxH);
-            ctx.strokeStyle = 'rgba(0,0,0,0.08)';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(boxX, boxY, boxW, boxH);
-            ctx.restore();
-
-            // Draw Text
-            ctx.textAlign = isLeft ? 'left' : 'right';
-            ctx.fillStyle = 'black';
-            ctx.font = `bold ${labelSize}px Inter, sans-serif`;
-            ctx.fillText(name, isLeft ? labelX : labelX, boxY + labelSize + (5 * scale));
-
-            ctx.fillStyle = '#64748b';
-            ctx.font = `${priceSize}px Inter, sans-serif`;
-            ctx.fillText(price, isLeft ? labelX : labelX, boxY + labelSize + priceSize + (15 * scale));
-          });
-
-          // 4. Branding (Store Name)
-          ctx.font = `${75 * scale}px "Playfair Display", serif`;
-          ctx.textAlign = 'center';
-          ctx.fillStyle = 'rgba(0,0,0,0.85)';
-          ctx.fillText(settings.storeName.toUpperCase(), canvas.width / 2, canvas.height - (100 * scale));
-
-          resolve(canvas.toDataURL('image/png', 0.95));
-        } catch (err) {
-          console.error("Canvas draw error", err);
-          resolve(imgUrl);
-        }
-      };
-      img.onerror = () => resolve(imgUrl);
-      img.src = imgUrl;
-    });
-  };
 
   const handleSaveToGallery = async (img: string) => {
     if (isSaving) return;
     setIsSaving(true);
     try {
-      const finalImg = state.isAnnotatedMode ? await flattenImage(img) : img;
-      const blob = await base64ToBlob(finalImg);
+      const blob = await base64ToBlob(img);
       const url = await uploadFile('ai-generated', `campaign_${Date.now()}.png`, blob);
 
       // Coletar IDs dos produtos selecionados
@@ -361,24 +244,6 @@ const CreativeStudio: React.FC = () => {
           <h2 className="font-black uppercase tracking-[0.2em] text-[10px] text-slate-400">Campaign Generator</h2>
         </div>
 
-        {/* 1. Escolha do Modo */}
-        <div className="space-y-4">
-          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">0. Modo de Trabalho</label>
-          <div className="flex p-1 bg-slate-50 rounded-2xl gap-1">
-            <button
-              onClick={() => actions.setAnnotatedMode(false)}
-              className={`flex-1 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${!state.isAnnotatedMode ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-            >
-              Campanha
-            </button>
-            <button
-              onClick={() => actions.setAnnotatedMode(true)}
-              className={`flex-1 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${state.isAnnotatedMode ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-            >
-              Look Anotado
-            </button>
-          </div>
-        </div>
 
         {/* 1. Gênero */}
         <div className="space-y-4">
@@ -475,30 +340,28 @@ const CreativeStudio: React.FC = () => {
           </div>
         </div>
 
-        {!state.isAnnotatedMode && (
-          <div className="space-y-4 pt-2 border-t border-slate-50">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">4. Coleção & Contexto</label>
-            <div className="flex p-1 bg-slate-50 rounded-2xl gap-1">
-              {SEASON_CATEGORIES.map(s => (
-                <button key={s.id} onClick={() => actions.setCollection(s.id)} className={`flex-1 py-3 flex flex-col items-center justify-center gap-1 rounded-xl transition-all ${state.collectionId === s.id ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
-                  <s.icon size={14} />
-                  <span className="text-[8px] font-black uppercase tracking-tighter">{s.name}</span>
-                </button>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto pr-1 scrollbar-hide">
-              {filteredScenes.map(s => (
-                <button key={s.id} onClick={() => actions.setScene(s.id)} className={`w-full text-left p-3 rounded-2xl border-2 transition-all flex items-center gap-3 ${state.sceneId === s.id ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl' : 'bg-slate-50 border-transparent text-slate-500 hover:border-slate-200'}`}>
-                  <div className="overflow-hidden">
-                    <p className={`text-[9px] font-black uppercase leading-none truncate ${state.sceneId === s.id ? 'text-white' : 'text-slate-900'}`}>{s.name}</p>
-                    <p className={`text-[7px] mt-1 opacity-60 leading-tight truncate ${state.sceneId === s.id ? 'text-indigo-100' : 'text-slate-400'}`}>{s.description}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
+        <div className="space-y-4 pt-2 border-t border-slate-50">
+          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">4. Coleção & Contexto</label>
+          <div className="flex p-1 bg-slate-50 rounded-2xl gap-1">
+            {SEASON_CATEGORIES.map(s => (
+              <button key={s.id} onClick={() => actions.setCollection(s.id)} className={`flex-1 py-3 flex flex-col items-center justify-center gap-1 rounded-xl transition-all ${state.collectionId === s.id ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
+                <s.icon size={14} />
+                <span className="text-[8px] font-black uppercase tracking-tighter">{s.name}</span>
+              </button>
+            ))}
           </div>
-        )}
+
+          <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto pr-1 scrollbar-hide">
+            {filteredScenes.map(s => (
+              <button key={s.id} onClick={() => actions.setScene(s.id)} className={`w-full text-left p-3 rounded-2xl border-2 transition-all flex items-center gap-3 ${state.sceneId === s.id ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl' : 'bg-slate-50 border-transparent text-slate-500 hover:border-slate-200'}`}>
+                <div className="overflow-hidden">
+                  <p className={`text-[9px] font-black uppercase leading-none truncate ${state.sceneId === s.id ? 'text-white' : 'text-slate-900'}`}>{s.name}</p>
+                  <p className={`text-[7px] mt-1 opacity-60 leading-tight truncate ${state.sceneId === s.id ? 'text-indigo-100' : 'text-slate-400'}`}>{s.description}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* 5. Formato */}
         <div className="space-y-3">
@@ -519,7 +382,7 @@ const CreativeStudio: React.FC = () => {
           className="w-full py-6 bg-black text-white rounded-3xl font-black text-xs uppercase tracking-[0.2em] shadow-2xl flex items-center justify-center gap-3 active:scale-95 transition-all hover:bg-slate-800 disabled:opacity-50"
         >
           {isGenerating ? <Loader2 className="animate-spin" size={18} /> : <Wand2 size={18} />}
-          {isGenerating ? 'Produzindo Campanha...' : state.isAnnotatedMode ? 'Gerar Look Anotado' : 'Gerar Ensaio'}
+          {isGenerating ? 'Produzindo Campanha...' : 'Gerar Ensaio'}
         </button>
       </aside>
 
@@ -547,11 +410,6 @@ const CreativeStudio: React.FC = () => {
               <div key={idx} className={`group relative rounded-[2.5rem] overflow-hidden bg-white shadow-2xl border-4 border-white animate-in zoom-in-95 duration-700 ${state.format === '9:16' ? 'aspect-[9/16]' : state.format === '16:9' ? 'aspect-video' : 'aspect-[3/4]'}`}>
                 <img src={img} className="w-full h-full object-cover" />
 
-                {state.isAnnotatedMode && (
-                  <AnnotatedOverlay
-                    products={state.selectedProducts}
-                  />
-                )}
 
                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-4 z-30">
                   <button
@@ -562,28 +420,13 @@ const CreativeStudio: React.FC = () => {
                     {isSaving ? <Loader2 className="animate-spin" size={14} /> : <Save size={14} />} Salvar Galeria
                   </button>
                   <button
-                    onClick={async () => {
-                      try {
-                        let finalUrl = img;
-                        if (state.isAnnotatedMode) {
-                          const flattened = await flattenImage(img);
-                          finalUrl = flattened;
-                        }
-
-                        // Download Direto
-                        const link = document.createElement('a');
-                        link.href = finalUrl;
-                        link.download = state.isAnnotatedMode ? 'look_anotado.png' : 'campanha.png';
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                      } catch (err) {
-                        console.error("Download failed:", err);
-                        const link = document.createElement('a');
-                        link.href = img;
-                        link.download = 'campanha.png';
-                        link.click();
-                      }
+                    onClick={() => {
+                      const link = document.createElement('a');
+                      link.href = img;
+                      link.download = 'campanha.png';
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
                     }}
                     className="w-48 py-3 bg-indigo-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-105 transition-transform"
                   >
