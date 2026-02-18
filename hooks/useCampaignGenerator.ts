@@ -18,14 +18,14 @@ interface CampaignState {
     shoes: Product | null;
     accessories: Product[]; // Array para múltiplos acessórios
   };
-  collectionId: string; // Scene category
   sceneId: string;
   format: Format;
+  isAnnotatedMode: boolean;
 }
 
 export const useCampaignGenerator = () => {
   const { products, avatars, settings } = useSettings();
-  
+
   const [state, setState] = useState<CampaignState>({
     gender: 'Feminino',
     selectedAvatarId: null,
@@ -38,7 +38,8 @@ export const useCampaignGenerator = () => {
     },
     collectionId: 'verao',
     sceneId: '',
-    format: '3:4' as Format // Default do sistema atual mapeado para editorial
+    format: '3:4' as Format, // Default do sistema atual mapeado para editorial
+    isAnnotatedMode: false
   });
 
   const [isGenerating, setIsGenerating] = useState(false);
@@ -68,24 +69,24 @@ export const useCampaignGenerator = () => {
 
   const filteredAvatars = useMemo(() => {
     return avatars.filter(a => {
-        // Avatares infantis só devem aparecer se o usuário estiver explicitamente buscando por infantil 
-        // Mas como o filtro de gênero "menino/menina" não existe no CampaignGenerator (apenas Fem/Masc),
-        // Vamos permitir que apareçam e filtrar por compatibilidade de gênero base
-        
-        // Mapeamento: Menina -> Feminino, Menino -> Masculino
-        const avatarGender = a.config?.gender;
-        if (!avatarGender) return true;
-        
-        const mapGender = (g: string) => {
-           if (g === 'Menina') return 'Feminino';
-           if (g === 'Menino') return 'Masculino';
-           return g;
-        };
+      // Avatares infantis só devem aparecer se o usuário estiver explicitamente buscando por infantil 
+      // Mas como o filtro de gênero "menino/menina" não existe no CampaignGenerator (apenas Fem/Masc),
+      // Vamos permitir que apareçam e filtrar por compatibilidade de gênero base
 
-        const mappedAvatarGender = mapGender(avatarGender);
+      // Mapeamento: Menina -> Feminino, Menino -> Masculino
+      const avatarGender = a.config?.gender;
+      if (!avatarGender) return true;
 
-        if (state.gender === 'Unissex') return true;
-        return mappedAvatarGender === state.gender;
+      const mapGender = (g: string) => {
+        if (g === 'Menina') return 'Feminino';
+        if (g === 'Menino') return 'Masculino';
+        return g;
+      };
+
+      const mappedAvatarGender = mapGender(avatarGender);
+
+      if (state.gender === 'Unissex') return true;
+      return mappedAvatarGender === state.gender;
     });
   }, [avatars, state.gender]);
 
@@ -96,7 +97,7 @@ export const useCampaignGenerator = () => {
 
   const toggleProduct = (product: Product) => {
     const slot = getProductSlot(product);
-    
+
     setState(prev => {
       const newProducts = { ...prev.selectedProducts };
 
@@ -117,7 +118,7 @@ export const useCampaignGenerator = () => {
       } else {
         // Top, Bottom, Shoes
         if (slot === 'top' || slot === 'bottom') {
-           newProducts.fullbody = null; // Limpa fullbody se selecionar partes
+          newProducts.fullbody = null; // Limpa fullbody se selecionar partes
         }
         // Toggle logic
         newProducts[slot] = (newProducts[slot] as Product)?.id === product.id ? null : product;
@@ -131,14 +132,15 @@ export const useCampaignGenerator = () => {
   const setCollection = (id: string) => setState(prev => ({ ...prev, collectionId: id }));
   const setScene = (id: string) => setState(prev => ({ ...prev, sceneId: id }));
   const setFormat = (f: Format) => setState(prev => ({ ...prev, format: f }));
+  const setAnnotatedMode = (val: boolean) => setState(prev => ({ ...prev, isAnnotatedMode: val }));
 
   // Generation Logic
   const generateCampaign = async (scenePrompt: string) => {
     const { selectedProducts, selectedAvatarId } = state;
-    
+
     // Validação básica: Pelo menos 1 produto selecionado
     const hasProduct = selectedProducts.top || selectedProducts.bottom || selectedProducts.fullbody || selectedProducts.shoes || selectedProducts.accessories.length > 0;
-    
+
     if (!hasProduct || isGenerating) return;
 
     setIsGenerating(true);
@@ -148,7 +150,7 @@ export const useCampaignGenerator = () => {
       const imagesParts: any[] = [];
       let promptBuilder = `FASHION CAMPAIGN GENERATION for brand "${settings.storeName}".\n`;
       promptBuilder += `CONTEXT: ${scenePrompt}\n`;
-      
+
       let isChildModel = false;
 
       // 1. Avatar
@@ -158,7 +160,7 @@ export const useCampaignGenerator = () => {
           const avatarMedia = await apiService.urlToBase64(avatar.image_url);
           imagesParts.push(avatarMedia);
           promptBuilder += `MODEL IDENTITY: Use the face and body structure from [IMAGE 1]. Maintain identity strictly.\n`;
-          
+
           if (avatar.config?.modelCategory === 'child') {
             isChildModel = true;
             promptBuilder += `IMPORTANT: The model is a CHILD (${avatar.config.age}). Ensure AGE-APPROPRIATE STYLING, proportions, and modest presentation. Child-safe editorial.\n`;
@@ -227,6 +229,7 @@ export const useCampaignGenerator = () => {
       setCollection,
       setScene,
       setFormat,
+      setAnnotatedMode,
       generateCampaign
     },
     helpers: {
