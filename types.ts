@@ -21,7 +21,9 @@ export enum AppRoute {
   PUBLIC_PRODUCT = '/loja/:storeSlug/produto/:productId',
   PRODUCT_SHOWCASE = '/product-showcase',
   TERMS = '/termos',
-  PRIVACY = '/privacidade'
+  PRIVACY = '/privacidade',
+  FORGOT_PASSWORD = '/forgot-password',
+  RESET_PASSWORD = '/reset-password'
 }
 
 export interface NavItem {

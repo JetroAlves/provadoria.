@@ -1,13 +1,13 @@
 
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { 
-  Mail, 
-  Lock, 
-  Loader2, 
-  AlertCircle, 
-  Eye, 
-  EyeOff, 
+import {
+  Mail,
+  Lock,
+  Loader2,
+  AlertCircle,
+  Eye,
+  EyeOff,
   Sparkles,
   ArrowRight
 } from 'lucide-react';
@@ -43,24 +43,24 @@ const Login: React.FC = () => {
     <div className="min-h-screen bg-white flex flex-col md:flex-row font-['Inter'] selection:bg-black selection:text-white">
       {/* Visual Side (Left) */}
       <div className="hidden md:flex md:w-1/2 lg:w-3/5 bg-slate-900 relative overflow-hidden">
-        <img 
-          src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=1200" 
-          alt="Fashion Editorial" 
+        <img
+          src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=1200"
+          alt="Fashion Editorial"
           className="absolute inset-0 w-full h-full object-cover opacity-50 grayscale hover:grayscale-0 transition-all duration-1000"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
-        
+
         <div className="relative z-10 p-16 lg:p-24 flex flex-col h-full">
           {/* Logo transformado em Botão de Voltar para Home */}
-          <button 
+          <button
             onClick={() => navigate('/')}
             className="flex items-center gap-3 group w-fit transition-transform active:scale-95"
             title="Voltar para a Página Inicial"
           >
-             <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-2xl transition-all group-hover:shadow-white/20 group-hover:rotate-3">
-                <span className="text-black font-black text-2xl tracking-tighter">P</span>
-             </div>
-             <span className="text-white text-2xl font-black tracking-tight uppercase group-hover:text-[#E11D48] transition-colors">Provadoria AI</span>
+            <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-2xl transition-all group-hover:shadow-white/20 group-hover:rotate-3">
+              <span className="text-black font-black text-2xl tracking-tighter">P</span>
+            </div>
+            <span className="text-white text-2xl font-black tracking-tight uppercase group-hover:text-[#E11D48] transition-colors">Provadoria AI</span>
           </button>
 
           <div className="mt-auto space-y-8">
@@ -77,7 +77,7 @@ const Login: React.FC = () => {
       {/* Login Form Side (Right) */}
       <div className="flex-1 flex flex-col justify-center px-8 md:px-16 lg:px-24 py-16 bg-white">
         <div className="max-w-md w-full mx-auto space-y-12">
-          
+
           <div className="space-y-3">
             <h3 className="text-5xl font-black text-slate-900 tracking-tighter leading-none uppercase">Bem-vindo.</h3>
             <p className="text-slate-400 font-medium italic">Acesse seu dashboard de lojista.</p>
@@ -90,8 +90,8 @@ const Login: React.FC = () => {
                 <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">E-mail Corporativo</label>
                 <div className="relative group">
                   <Mail className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-black transition-colors" size={22} />
-                  <input 
-                    type="email" 
+                  <input
+                    type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -105,19 +105,19 @@ const Login: React.FC = () => {
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Sua Senha</label>
-                  <Link to="#" className="text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-800 transition-colors">Esqueceu a senha?</Link>
+                  <Link to={AppRoute.FORGOT_PASSWORD} className="text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-800 transition-colors">Esqueceu a senha?</Link>
                 </div>
                 <div className="relative group">
                   <Lock className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-black transition-colors" size={22} />
-                  <input 
-                    type={showPassword ? "text" : "password"} 
+                  <input
+                    type={showPassword ? "text" : "password"}
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full pl-16 pr-16 py-6 bg-slate-50 border-none rounded-3xl text-sm font-bold focus:ring-4 focus:ring-black/5 outline-none transition-all placeholder:text-slate-300"
                     placeholder="••••••••"
                   />
-                  <button 
+                  <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 hover:text-black transition-colors"
@@ -159,12 +159,12 @@ const Login: React.FC = () => {
           </div>
 
           <div className="pt-12 flex justify-between items-center text-[9px] font-black text-slate-300 uppercase tracking-[0.2em]">
-             <span>© 2025 Provadoria Fashion AI B2B.</span>
-             <div className="flex gap-4">
-                <span className="hover:text-slate-900 cursor-pointer transition-colors">Privacidade</span>
-                <span className="hover:text-slate-900 cursor-pointer transition-colors">Termos</span>
-                <span className="hover:text-slate-900 cursor-pointer transition-colors">Ajuda</span>
-             </div>
+            <span>© 2025 Provadoria Fashion AI B2B.</span>
+            <div className="flex gap-4">
+              <span className="hover:text-slate-900 cursor-pointer transition-colors">Privacidade</span>
+              <span className="hover:text-slate-900 cursor-pointer transition-colors">Termos</span>
+              <span className="hover:text-slate-900 cursor-pointer transition-colors">Ajuda</span>
+            </div>
           </div>
         </div>
       </div>

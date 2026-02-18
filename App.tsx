@@ -23,6 +23,8 @@ import Register from './components/views/Register';
 import Onboarding from './components/views/Onboarding';
 import Terms from './components/views/Terms';
 import Privacy from './components/views/Privacy';
+import ForgotPassword from './components/views/ForgotPassword';
+import ResetPassword from './components/views/ResetPassword';
 import { SettingsProvider } from './context/SettingsContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { GalleryProvider } from './context/GalleryContext';
@@ -96,6 +98,8 @@ const AppContent: React.FC = () => {
       {/* 5. PÁGINAS LEGAIS */}
       <Route path={AppRoute.TERMS} element={<Terms />} />
       <Route path={AppRoute.PRIVACY} element={<Privacy />} />
+      <Route path={AppRoute.FORGOT_PASSWORD} element={<ForgotPassword />} />
+      <Route path={AppRoute.RESET_PASSWORD} element={<ResetPassword />} />
 
       {/* Redirecionamento padrão para Home se rota não existir */}
       <Route path="*" element={<Navigate to="/" replace />} />

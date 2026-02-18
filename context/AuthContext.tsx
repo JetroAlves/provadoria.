@@ -11,6 +11,8 @@ interface AuthContextType {
   completeOnboarding: (storeName: string, storeSlug: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
+  resetPasswordForEmail: (email: string) => Promise<void>;
+  updateUserPassword: (newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -44,7 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (supabase.auth.getSession === undefined) {
       throw new Error("Supabase não configurado. Verifique as variáveis de ambiente.");
     }
-    
+
     setIsLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
     if (error) {
@@ -75,7 +77,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const completeOnboarding = async (storeName: string, storeSlug: string) => {
     setIsLoading(true);
-    
+
     const { error: authError } = await supabase.auth.updateUser({
       data: { storeName, storeSlug }
     });
@@ -112,8 +114,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const resetPasswordForEmail = async (email: string) => {
+    setIsLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/#/reset-password`,
+    });
+    setIsLoading(false);
+    if (error) throw error;
+  };
+
+  const updateUserPassword = async (newPassword: string) => {
+    setIsLoading(true);
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+    setIsLoading(false);
+    if (error) throw error;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, completeOnboarding, loginWithGoogle, logout }}>
+    <AuthContext.Provider value={{
+      user,
+      isLoading,
+      login,
+      register,
+      completeOnboarding,
+      loginWithGoogle,
+      logout,
+      resetPasswordForEmail,
+      updateUserPassword
+    }}>
       {children}
     </AuthContext.Provider>
   );
