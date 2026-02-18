@@ -197,104 +197,115 @@ const CreativeStudio: React.FC = () => {
     actions.generateCampaign(prompt);
   };
 
-  const loadImage = (url: string): Promise<HTMLImageElement> => {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      if (!url.startsWith('data:')) img.crossOrigin = "anonymous";
-      img.onload = () => resolve(img);
-      img.onerror = (e) => reject(e);
-      img.src = url;
-    });
-  };
-
   const flattenImage = async (imgUrl: string): Promise<string> => {
-    try {
-      const img = await loadImage(imgUrl);
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return imgUrl;
+    return new Promise((resolve) => {
+      const img = new Image();
+      if (!imgUrl.startsWith('data:')) img.crossOrigin = "anonymous";
 
-      // Limpar e desenhar imagem base
-      ctx.fillStyle = 'white';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0);
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return resolve(imgUrl);
 
-      // Tentar carregar fontes ANTES de desenhar
-      try {
-        await Promise.all([
-          document.fonts.load('bold 24px Inter'),
-          document.fonts.load('normal 70px "Playfair Display"')
-        ]);
-      } catch (fErr) {
-        console.warn("Fonts not loaded for canvas, using fallback", fErr);
-      }
+          // 1. Fundo e Imagem Base
+          ctx.fillStyle = 'white';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0);
 
-      // Render annotations onto canvas
-      const annotations = [];
-      if (state.selectedProducts.fullbody) {
-        annotations.push({ product: state.selectedProducts.fullbody, x: 0.7, y: 0.4, side: 'right' });
-      } else {
-        if (state.selectedProducts.top) annotations.push({ product: state.selectedProducts.top, x: 0.3, y: 0.3, side: 'left' });
-        if (state.selectedProducts.bottom) annotations.push({ product: state.selectedProducts.bottom, x: 0.7, y: 0.6, side: 'right' });
-      }
-      if (state.selectedProducts.shoes) annotations.push({ product: state.selectedProducts.shoes, x: 0.3, y: 0.85, side: 'left' });
-      state.selectedProducts.accessories.forEach((acc, idx) => {
-        annotations.push({ product: acc, x: 0.7, y: 0.2 + idx * 0.1, side: 'right' });
-      });
+          const scale = canvas.width / 1000;
 
-      annotations.forEach(ann => {
-        const isLeft = ann.side === 'left';
-        const x = ann.x * canvas.width;
-        const y = ann.y * canvas.height;
-        const labelMargin = 0.05 * canvas.width;
-        const labelX = isLeft ? labelMargin : canvas.width - labelMargin;
+          // 2. Coletar Itens
+          const items = [];
+          if (state.selectedProducts.fullbody) {
+            items.push({ p: state.selectedProducts.fullbody, x: 0.7, y: 0.4, side: 'right' });
+          } else {
+            if (state.selectedProducts.top) items.push({ p: state.selectedProducts.top, x: 0.3, y: 0.3, side: 'left' });
+            if (state.selectedProducts.bottom) items.push({ p: state.selectedProducts.bottom, x: 0.7, y: 0.6, side: 'right' });
+          }
+          if (state.selectedProducts.shoes) items.push({ p: state.selectedProducts.shoes, x: 0.3, y: 0.85, side: 'left' });
+          state.selectedProducts.accessories.forEach((acc, i) => {
+            items.push({ p: acc, x: 0.7, y: 0.2 + (i * 0.1), side: 'right' });
+          });
 
-        // Draw Line
-        ctx.beginPath();
-        ctx.moveTo(labelX, y);
-        ctx.lineTo(x, y);
-        ctx.strokeStyle = 'black';
-        ctx.lineWidth = 2;
-        ctx.globalAlpha = 0.2;
-        ctx.stroke();
+          // 3. Desenhar Anotações
+          items.forEach(item => {
+            const isLeft = item.side === 'left';
+            const px = item.x * canvas.width;
+            const py = item.y * canvas.height;
+            const labelMargin = 0.05 * canvas.width;
+            const labelX = isLeft ? labelMargin : canvas.width - labelMargin;
 
-        // Draw Point
-        ctx.beginPath();
-        ctx.arc(x, y, 6, 0, Math.PI * 2);
-        ctx.fillStyle = 'black';
-        ctx.globalAlpha = 0.6;
-        ctx.fill();
+            // Linha
+            ctx.beginPath();
+            ctx.moveTo(labelX, py);
+            ctx.lineTo(px, py);
+            ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+            ctx.lineWidth = 2 * scale;
+            ctx.stroke();
 
-        // Draw Text
-        ctx.globalAlpha = 1;
-        ctx.font = 'bold 24px Inter, sans-serif';
-        ctx.textAlign = isLeft ? 'left' : 'right';
-        ctx.fillStyle = 'black';
+            // Ponto
+            ctx.beginPath();
+            ctx.arc(px, py, 6 * scale, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.fill();
 
-        const text = ann.product.name.toUpperCase();
-        const price = `R$ ${ann.product.price.toLocaleString('pt-BR')}`;
-        const textX = isLeft ? 0.02 * canvas.width : canvas.width - 0.02 * canvas.width;
+            // Textos
+            const name = item.p.name.toUpperCase();
+            const price = `R$ ${item.p.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 
-        ctx.fillText(text, textX, y - 10);
-        ctx.font = '20px Inter, sans-serif';
-        ctx.fillStyle = '#64748b';
-        ctx.fillText(price, textX, y + 25);
-      });
+            const labelSize = Math.round(24 * scale);
+            const priceSize = Math.round(18 * scale);
 
-      // Draw Store Name (Branding)
-      ctx.font = 'normal 70px "Playfair Display", serif';
-      ctx.textAlign = 'center';
-      ctx.fillStyle = 'black';
-      ctx.globalAlpha = 0.8;
-      ctx.fillText(settings.storeName.toUpperCase(), canvas.width / 2, canvas.height - 120);
+            ctx.font = `bold ${labelSize}px Inter, sans-serif`;
+            const nameW = ctx.measureText(name).width;
+            ctx.font = `${priceSize}px Inter, sans-serif`;
+            const priceW = ctx.measureText(price).width;
 
-      return canvas.toDataURL('image/png');
-    } catch (err) {
-      console.error("Flattening failed:", err);
-      return imgUrl;
-    }
+            const boxW = Math.max(nameW, priceW) + (30 * scale);
+            const boxH = labelSize + priceSize + (30 * scale);
+            const boxX = isLeft ? labelX - (10 * scale) : labelX - boxW + (10 * scale);
+            const boxY = py - labelSize - (15 * scale);
+
+            // Box white Background
+            ctx.save();
+            ctx.fillStyle = 'white';
+            ctx.shadowColor = 'rgba(0,0,0,0.1)';
+            ctx.shadowBlur = 15 * scale;
+            ctx.fillRect(boxX, boxY, boxW, boxH);
+            ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(boxX, boxY, boxW, boxH);
+            ctx.restore();
+
+            // Draw Text
+            ctx.textAlign = isLeft ? 'left' : 'right';
+            ctx.fillStyle = 'black';
+            ctx.font = `bold ${labelSize}px Inter, sans-serif`;
+            ctx.fillText(name, isLeft ? labelX : labelX, boxY + labelSize + (5 * scale));
+
+            ctx.fillStyle = '#64748b';
+            ctx.font = `${priceSize}px Inter, sans-serif`;
+            ctx.fillText(price, isLeft ? labelX : labelX, boxY + labelSize + priceSize + (15 * scale));
+          });
+
+          // 4. Branding (Store Name)
+          ctx.font = `${75 * scale}px "Playfair Display", serif`;
+          ctx.textAlign = 'center';
+          ctx.fillStyle = 'rgba(0,0,0,0.85)';
+          ctx.fillText(settings.storeName.toUpperCase(), canvas.width / 2, canvas.height - (100 * scale));
+
+          resolve(canvas.toDataURL('image/png', 0.95));
+        } catch (err) {
+          console.error("Canvas draw error", err);
+          resolve(imgUrl);
+        }
+      };
+      img.onerror = () => resolve(imgUrl);
+      img.src = imgUrl;
+    });
   };
 
   const handleSaveToGallery = async (img: string) => {
@@ -553,26 +564,19 @@ const CreativeStudio: React.FC = () => {
                   <button
                     onClick={async () => {
                       try {
-                        const finalImg = state.isAnnotatedMode ? await flattenImage(img) : img;
-
-                        // Safe download using Blob
-                        let downloadUrl = finalImg;
-                        if (finalImg.startsWith('data:')) {
-                          const res = await fetch(finalImg);
-                          const blob = await res.blob();
-                          downloadUrl = URL.createObjectURL(blob);
+                        let finalUrl = img;
+                        if (state.isAnnotatedMode) {
+                          const flattened = await flattenImage(img);
+                          finalUrl = flattened;
                         }
 
+                        // Download Direto
                         const link = document.createElement('a');
-                        link.href = downloadUrl;
+                        link.href = finalUrl;
                         link.download = state.isAnnotatedMode ? 'look_anotado.png' : 'campanha.png';
                         document.body.appendChild(link);
                         link.click();
                         document.body.removeChild(link);
-
-                        if (downloadUrl.startsWith('blob:')) {
-                          setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
-                        }
                       } catch (err) {
                         console.error("Download failed:", err);
                         const link = document.createElement('a');
