@@ -66,27 +66,35 @@ const AuthLoadingScreen = () => (
 
 const AppContent: React.FC = () => {
   const navigate = useNavigate();
+  const [isRecovering, setIsRecovering] = React.useState(false);
 
   useEffect(() => {
-    // Escutar mudanças de estado do Supabase para redirecionar em caso de recuperação de senha
-    // Quando clicamos no link do email, o Supabase coloca os tokens na URL e nos manda para o site.
+    // Verificar se há tokens de recuperação na URL antes de qualquer redirecionamento do router
+    const hash = window.location.hash;
+    const isRecovery = hash.includes('type=recovery') || hash.includes('access_token=');
+
+    if (isRecovery) {
+      setIsRecovering(true);
+      // Pequeno delay para garantir que o Supabase processe o hash
+      setTimeout(() => {
+        navigate(AppRoute.RESET_PASSWORD);
+        setIsRecovering(false);
+      }, 1000);
+    }
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') {
+        setIsRecovering(true);
         navigate(AppRoute.RESET_PASSWORD);
+        // Remove o estado de carregamento após a navegação
+        setTimeout(() => setIsRecovering(false), 500);
       }
     });
 
-    // Fallback: Verificar se os tokens estão na URL (para garantir em alguns navegadores)
-    const hash = window.location.hash;
-    if (hash.includes('type=recovery') || hash.includes('access_token=')) {
-      // Se estivermos na raiz e houver tokens, tentamos forçar a navegação se o state change não disparou
-      if (window.location.pathname === '/' && !hash.includes('reset-password')) {
-        navigate(AppRoute.RESET_PASSWORD);
-      }
-    }
-
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  if (isRecovering) return <AuthLoadingScreen />;
 
   return (
     <Routes>
