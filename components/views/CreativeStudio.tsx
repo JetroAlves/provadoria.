@@ -197,86 +197,104 @@ const CreativeStudio: React.FC = () => {
     actions.generateCampaign(prompt);
   };
 
-  const flattenImage = async (imgUrl: string): Promise<string> => {
-    return new Promise((resolve) => {
-      const canvas = document.createElement('canvas');
+  const loadImage = (url: string): Promise<HTMLImageElement> => {
+    return new Promise((resolve, reject) => {
       const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => {
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return resolve(imgUrl);
-
-        ctx.drawImage(img, 0, 0);
-
-        // Render annotations onto canvas
-        const annotations = [];
-        if (state.selectedProducts.fullbody) {
-          annotations.push({ product: state.selectedProducts.fullbody, x: 0.7, y: 0.4, side: 'right' });
-        } else {
-          if (state.selectedProducts.top) annotations.push({ product: state.selectedProducts.top, x: 0.3, y: 0.3, side: 'left' });
-          if (state.selectedProducts.bottom) annotations.push({ product: state.selectedProducts.bottom, x: 0.7, y: 0.6, side: 'right' });
-        }
-        if (state.selectedProducts.shoes) annotations.push({ product: state.selectedProducts.shoes, x: 0.3, y: 0.85, side: 'left' });
-        state.selectedProducts.accessories.forEach((acc, idx) => {
-          annotations.push({ product: acc, x: 0.7, y: 0.2 + idx * 0.1, side: 'right' });
-        });
-
-        annotations.forEach(ann => {
-          const isLeft = ann.side === 'left';
-          const x = ann.x * canvas.width;
-          const y = ann.y * canvas.height;
-          const labelMargin = 0.05 * canvas.width; // 5% de margem
-          const labelX = isLeft ? labelMargin : canvas.width - labelMargin;
-
-          // Draw Line
-          ctx.beginPath();
-          ctx.moveTo(labelX, y);
-          ctx.lineTo(x, y);
-          ctx.strokeStyle = 'black';
-          ctx.lineWidth = 2;
-          ctx.globalAlpha = 0.2;
-          ctx.stroke();
-
-          // Draw Point
-          ctx.beginPath();
-          ctx.arc(x, y, 6, 0, Math.PI * 2);
-          ctx.fillStyle = 'black';
-          ctx.globalAlpha = 0.6;
-          ctx.fill();
-
-          // Draw Text
-          ctx.font = 'bold 24px Inter, sans-serif';
-          ctx.textAlign = isLeft ? 'left' : 'right';
-          ctx.fillStyle = 'black';
-          ctx.globalAlpha = 1;
-
-          const text = ann.product.name.toUpperCase();
-          const price = `R$ ${ann.product.price.toLocaleString('pt-BR')}`;
-
-          const textX = isLeft ? 0.02 * canvas.width : canvas.width - 0.02 * canvas.width;
-
-          ctx.fillText(text, textX, y - 10);
-          ctx.font = '20px Inter, sans-serif';
-          ctx.fillStyle = '#64748b'; // slate-500
-          ctx.fillText(price, textX, y + 25);
-        });
-
-        // Draw Store Name (Branding)
-        ctx.font = 'normal 70px "Playfair Display", serif';
-        ctx.textAlign = 'center';
-        ctx.fillStyle = 'rgba(0,0,0,0.8)';
-        ctx.fillText(settings.storeName.toUpperCase(), canvas.width / 2, canvas.height - 120);
-
-        resolve(canvas.toDataURL('image/png', 0.9));
-      };
-      img.onerror = () => resolve(imgUrl);
-      img.src = imgUrl;
-
-      // Safety timeout
-      setTimeout(() => resolve(imgUrl), 8000);
+      if (!url.startsWith('data:')) img.crossOrigin = "anonymous";
+      img.onload = () => resolve(img);
+      img.onerror = (e) => reject(e);
+      img.src = url;
     });
+  };
+
+  const flattenImage = async (imgUrl: string): Promise<string> => {
+    try {
+      const img = await loadImage(imgUrl);
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return imgUrl;
+
+      // Limpar e desenhar imagem base
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+
+      // Tentar carregar fontes ANTES de desenhar
+      try {
+        await Promise.all([
+          document.fonts.load('bold 24px Inter'),
+          document.fonts.load('normal 70px "Playfair Display"')
+        ]);
+      } catch (fErr) {
+        console.warn("Fonts not loaded for canvas, using fallback", fErr);
+      }
+
+      // Render annotations onto canvas
+      const annotations = [];
+      if (state.selectedProducts.fullbody) {
+        annotations.push({ product: state.selectedProducts.fullbody, x: 0.7, y: 0.4, side: 'right' });
+      } else {
+        if (state.selectedProducts.top) annotations.push({ product: state.selectedProducts.top, x: 0.3, y: 0.3, side: 'left' });
+        if (state.selectedProducts.bottom) annotations.push({ product: state.selectedProducts.bottom, x: 0.7, y: 0.6, side: 'right' });
+      }
+      if (state.selectedProducts.shoes) annotations.push({ product: state.selectedProducts.shoes, x: 0.3, y: 0.85, side: 'left' });
+      state.selectedProducts.accessories.forEach((acc, idx) => {
+        annotations.push({ product: acc, x: 0.7, y: 0.2 + idx * 0.1, side: 'right' });
+      });
+
+      annotations.forEach(ann => {
+        const isLeft = ann.side === 'left';
+        const x = ann.x * canvas.width;
+        const y = ann.y * canvas.height;
+        const labelMargin = 0.05 * canvas.width;
+        const labelX = isLeft ? labelMargin : canvas.width - labelMargin;
+
+        // Draw Line
+        ctx.beginPath();
+        ctx.moveTo(labelX, y);
+        ctx.lineTo(x, y);
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.globalAlpha = 0.2;
+        ctx.stroke();
+
+        // Draw Point
+        ctx.beginPath();
+        ctx.arc(x, y, 6, 0, Math.PI * 2);
+        ctx.fillStyle = 'black';
+        ctx.globalAlpha = 0.6;
+        ctx.fill();
+
+        // Draw Text
+        ctx.globalAlpha = 1;
+        ctx.font = 'bold 24px Inter, sans-serif';
+        ctx.textAlign = isLeft ? 'left' : 'right';
+        ctx.fillStyle = 'black';
+
+        const text = ann.product.name.toUpperCase();
+        const price = `R$ ${ann.product.price.toLocaleString('pt-BR')}`;
+        const textX = isLeft ? 0.02 * canvas.width : canvas.width - 0.02 * canvas.width;
+
+        ctx.fillText(text, textX, y - 10);
+        ctx.font = '20px Inter, sans-serif';
+        ctx.fillStyle = '#64748b';
+        ctx.fillText(price, textX, y + 25);
+      });
+
+      // Draw Store Name (Branding)
+      ctx.font = 'normal 70px "Playfair Display", serif';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'black';
+      ctx.globalAlpha = 0.8;
+      ctx.fillText(settings.storeName.toUpperCase(), canvas.width / 2, canvas.height - 120);
+
+      return canvas.toDataURL('image/png');
+    } catch (err) {
+      console.error("Flattening failed:", err);
+      return imgUrl;
+    }
   };
 
   const handleSaveToGallery = async (img: string) => {
