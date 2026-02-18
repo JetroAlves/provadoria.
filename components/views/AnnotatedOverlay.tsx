@@ -83,11 +83,11 @@ const AnnotatedOverlay: React.FC<AnnotatedOverlayProps> = ({ products }) => {
                         className="absolute flex flex-col"
                         style={{
                             top: `${ann.y}%`,
-                            [isLeft ? 'left' : 'right']: '2%',
+                            [isLeft ? 'left' : 'right']: '1.5%',
                             transform: 'translateY(-50%)',
                             textAlign: isLeft ? 'left' : 'right',
                             alignItems: isLeft ? 'flex-start' : 'flex-end',
-                            maxWidth: '35%' // Garante que o texto não "atravesse" a modelo
+                            maxWidth: '30%' // Ainda mais restrito para evitar a modelo
                         }}
                     >
                         <p className="text-[10px] font-black uppercase tracking-widest text-black bg-white/80 backdrop-blur-sm px-2 py-0.5 rounded-sm shadow-sm ring-1 ring-black/5">
@@ -100,8 +100,8 @@ const AnnotatedOverlay: React.FC<AnnotatedOverlayProps> = ({ products }) => {
                 );
             })}
             {/* Branding */}
-            <div className="absolute bottom-10 left-0 right-0 text-center animate-in fade-in duration-1000 slide-in-from-bottom-5">
-                <h2 className="text-3xl md:text-5xl font-light tracking-[0.2em] text-black/80 uppercase" style={{ fontFamily: 'Playfair Display, serif' }}>
+            <div className="absolute bottom-16 left-0 right-0 text-center animate-in fade-in duration-1000 slide-in-from-bottom-5 z-40">
+                <h2 className="text-4xl md:text-6xl font-normal tracking-[0.25em] text-black/90 uppercase" style={{ fontFamily: 'Playfair Display, serif' }}>
                     {settings.storeName}
                 </h2>
             </div>

@@ -189,7 +189,7 @@ const CreativeStudio: React.FC = () => {
   const handleGenerateClick = () => {
     let prompt = '';
     if (state.isAnnotatedMode) {
-      prompt = `HIGH-END PROFESSIONAL FASHION EDITORIAL. Full body shot, model centered and small in frame to allow for whitespace at margins. PURE WHITE BACKGROUND. Minimalist studio lighting. Vogue aesthetic. No props. Clean background.`;
+      prompt = `HIGH-END PROFESSIONAL FASHION EDITORIAL. Model is SMALL AND CENTERED in frame with WIDE MARGINS on left and right. Full body shot. PURE WHITE BACKGROUND. Minimalist studio lighting. Vogue aesthetic. No props. Clean background. Very high quality.`;
     } else {
       const scene = SCENES.find(s => s.id === state.sceneId);
       prompt = scene?.prompt || '';
@@ -264,14 +264,18 @@ const CreativeStudio: React.FC = () => {
         });
 
         // Draw Store Name (Branding)
-        ctx.font = 'normal 60px "Playfair Display", serif';
+        ctx.font = 'normal 70px "Playfair Display", serif';
         ctx.textAlign = 'center';
-        ctx.fillStyle = 'black';
-        ctx.fillText(settings.storeName.toUpperCase(), canvas.width / 2, canvas.height - 100);
+        ctx.fillStyle = 'rgba(0,0,0,0.8)';
+        ctx.fillText(settings.storeName.toUpperCase(), canvas.width / 2, canvas.height - 120);
 
-        resolve(canvas.toDataURL('image/png'));
+        resolve(canvas.toDataURL('image/png', 0.9));
       };
+      img.onerror = () => resolve(imgUrl);
       img.src = imgUrl;
+
+      // Safety timeout
+      setTimeout(() => resolve(imgUrl), 8000);
     });
   };
 
@@ -530,11 +534,34 @@ const CreativeStudio: React.FC = () => {
                   </button>
                   <button
                     onClick={async () => {
-                      const finalImg = state.isAnnotatedMode ? await flattenImage(img) : img;
-                      const link = document.createElement('a');
-                      link.href = finalImg;
-                      link.download = 'look_anotado.png';
-                      link.click();
+                      try {
+                        const finalImg = state.isAnnotatedMode ? await flattenImage(img) : img;
+
+                        // Safe download using Blob
+                        let downloadUrl = finalImg;
+                        if (finalImg.startsWith('data:')) {
+                          const res = await fetch(finalImg);
+                          const blob = await res.blob();
+                          downloadUrl = URL.createObjectURL(blob);
+                        }
+
+                        const link = document.createElement('a');
+                        link.href = downloadUrl;
+                        link.download = state.isAnnotatedMode ? 'look_anotado.png' : 'campanha.png';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+
+                        if (downloadUrl.startsWith('blob:')) {
+                          setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+                        }
+                      } catch (err) {
+                        console.error("Download failed:", err);
+                        const link = document.createElement('a');
+                        link.href = img;
+                        link.download = 'campanha.png';
+                        link.click();
+                      }
                     }}
                     className="w-48 py-3 bg-indigo-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-105 transition-transform"
                   >
