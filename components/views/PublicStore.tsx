@@ -204,47 +204,68 @@ const PublicStore: React.FC = () => {
                 placeholder="Buscar por nome, SKU ou tag..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-16 pr-6 py-5 bg-slate-50 border-none rounded-2xl text-sm font-bold focus:ring-4 focus:ring-black/5 outline-none transition-all placeholder:text-slate-300"
+                className="w-full pl-16 pr-6 py-4 md:py-5 bg-slate-50 border-none rounded-2xl text-sm font-bold focus:ring-4 focus:ring-black/5 outline-none transition-all placeholder:text-slate-300"
               />
             </div>
 
-            <div className="flex flex-wrap gap-2">
-              <div className="relative min-w-[180px]">
-                <select
-                  value={activeCategory}
-                  onChange={(e) => setActiveCategory(e.target.value)}
-                  className="w-full appearance-none pl-6 pr-12 py-5 bg-slate-50 border-none rounded-2xl text-sm font-black uppercase tracking-widest focus:ring-4 focus:ring-black/5 outline-none cursor-pointer"
+            <div className="flex flex-col md:flex-row gap-2">
+              {/* Category Chips - Mobile (Visible only on small screens) */}
+              <div className="flex md:hidden overflow-x-auto no-scrollbar gap-2 pb-1">
+                <button
+                  onClick={() => setActiveCategory('Tudo')}
+                  className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all border ${activeCategory === 'Tudo' ? 'bg-black text-white border-black' : 'bg-slate-50 text-slate-400 border-transparent hover:bg-slate-100'}`}
                 >
-                  <option value="Tudo">Todas Categorias</option>
-                  {categories.filter(c => c.status === 'active').map(cat => (
-                    <option key={cat.id} value={cat.name}>{cat.name}</option>
-                  ))}
-                </select>
-                <ChevronRight className="absolute right-6 top-1/2 -translate-y-1/2 rotate-90 text-slate-400 pointer-events-none" size={16} />
+                  Tudo
+                </button>
+                {categories.filter(c => c.status === 'active').map(cat => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setActiveCategory(cat.name)}
+                    className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all border ${activeCategory === cat.name ? 'bg-black text-white border-black' : 'bg-slate-50 text-slate-400 border-transparent hover:bg-slate-100'}`}
+                  >
+                    {cat.name}
+                  </button>
+                ))}
               </div>
 
-              <div className="relative min-w-[180px]">
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="w-full appearance-none pl-6 pr-12 py-5 bg-slate-50 border-none rounded-2xl text-sm font-black uppercase tracking-widest focus:ring-4 focus:ring-black/5 outline-none cursor-pointer"
-                >
-                  <option value="newest">Mais Recentes</option>
-                  <option value="price-asc">Menor Preço</option>
-                  <option value="price-desc">Maior Preço</option>
-                  <option value="name">Nome (A-Z)</option>
-                </select>
-                <ChevronRight className="absolute right-6 top-1/2 -translate-y-1/2 rotate-90 text-slate-400 pointer-events-none" size={16} />
-              </div>
+              <div className="flex gap-2 w-full md:w-auto">
+                {/* Desktop Category Select - Hidden on Mobile */}
+                <div className="relative flex-1 md:min-w-[180px] hidden md:block">
+                  <select
+                    value={activeCategory}
+                    onChange={(e) => setActiveCategory(e.target.value)}
+                    className="w-full appearance-none pl-6 pr-12 py-5 bg-slate-50 border-none rounded-2xl text-sm font-black uppercase tracking-widest focus:ring-4 focus:ring-black/5 outline-none cursor-pointer"
+                  >
+                    <option value="Tudo">Todas Categorias</option>
+                    {categories.filter(c => c.status === 'active').map(cat => (
+                      <option key={cat.id} value={cat.name}>{cat.name}</option>
+                    ))}
+                  </select>
+                  <ChevronRight className="absolute right-6 top-1/2 -translate-y-1/2 rotate-90 text-slate-400 pointer-events-none" size={16} />
+                </div>
 
-              <button
-                onClick={() => setIsFilterOpen(!isFilterOpen)}
-                className={`flex items-center gap-3 px-8 py-5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all border ${isFilterOpen ? 'bg-black text-white border-black shadow-xl' : 'bg-slate-50 text-slate-600 border-transparent hover:bg-slate-100'
-                  }`}
-              >
-                <Filter size={18} />
-                Filtros
-              </button>
+                <div className="relative flex-1 md:min-w-[180px]">
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="w-full appearance-none pl-6 pr-10 md:pr-12 py-4 md:py-5 bg-slate-50 border-none rounded-2xl text-[10px] md:text-sm font-black uppercase tracking-widest focus:ring-4 focus:ring-black/5 outline-none cursor-pointer"
+                  >
+                    <option value="newest">Mais Recentes</option>
+                    <option value="price-asc">Menor Preço</option>
+                    <option value="price-desc">Maior Preço</option>
+                    <option value="name">Nome (A-Z)</option>
+                  </select>
+                  <ChevronRight className="absolute right-4 md:right-6 top-1/2 -translate-y-1/2 rotate-90 text-slate-400 pointer-events-none" size={16} />
+                </div>
+
+                <button
+                  onClick={() => setIsFilterOpen(!isFilterOpen)}
+                  className={`flex items-center justify-center gap-2 md:gap-3 px-6 md:px-8 py-4 md:py-5 rounded-2xl text-[10px] md:text-xs font-black uppercase tracking-widest transition-all border ${isFilterOpen ? 'bg-black text-white border-black shadow-xl' : 'bg-slate-50 text-slate-600 border-transparent hover:bg-slate-100'}`}
+                >
+                  <Filter size={16} className="md:w-[18px] md:h-[18px]" />
+                  <span className="hidden sm:inline">Filtros</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -314,7 +335,7 @@ const PublicStore: React.FC = () => {
                   <img
                     src={product.image}
                     alt={product.name}
-                    className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-1000 grayscale group-hover:grayscale-0"
+                    className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-1000 grayscale-0 md:grayscale md:group-hover:grayscale-0"
                   />
 
                   {/* Hover Quick Action */}
