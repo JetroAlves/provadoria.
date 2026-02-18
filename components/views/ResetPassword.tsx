@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { AppRoute } from '../../types';
+import { supabase } from '../../lib/supabase';
 
 const ResetPassword: React.FC = () => {
     const navigate = useNavigate();
@@ -40,10 +41,17 @@ const ResetPassword: React.FC = () => {
         setIsSubmitting(true);
 
         try {
+            // Verificar se temos uma sessão ativa antes de tentar atualizar
+            const { data } = await supabase.auth.getSession();
+            if (!data.session) {
+                throw new Error('Sessão de recuperação não encontrada ou expirada. Por favor, solicite um novo link.');
+            }
+
             await updateUserPassword(password);
             setSuccess(true);
             setTimeout(() => navigate(AppRoute.LOGIN), 3000);
         } catch (err: any) {
+            console.error('Update password error:', err);
             setError(err.message || 'Falha ao atualizar senha. O link pode ter expirado.');
         } finally {
             setIsSubmitting(false);

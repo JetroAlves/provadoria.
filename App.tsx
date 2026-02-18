@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { HashRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import LandingPage from './components/views/LandingPage';
 import Dashboard from './components/views/Dashboard';
@@ -25,6 +25,7 @@ import Terms from './components/views/Terms';
 import Privacy from './components/views/Privacy';
 import ForgotPassword from './components/views/ForgotPassword';
 import ResetPassword from './components/views/ResetPassword';
+import { supabase } from './lib/supabase';
 import { SettingsProvider } from './context/SettingsContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { GalleryProvider } from './context/GalleryContext';
@@ -64,6 +65,29 @@ const AuthLoadingScreen = () => (
 );
 
 const AppContent: React.FC = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Escutar mudanças de estado do Supabase para redirecionar em caso de recuperação de senha
+    // Quando clicamos no link do email, o Supabase coloca os tokens na URL e nos manda para o site.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        navigate(AppRoute.RESET_PASSWORD);
+      }
+    });
+
+    // Fallback: Verificar se os tokens estão na URL (para garantir em alguns navegadores)
+    const hash = window.location.hash;
+    if (hash.includes('type=recovery') || hash.includes('access_token=')) {
+      // Se estivermos na raiz e houver tokens, tentamos forçar a navegação se o state change não disparou
+      if (window.location.pathname === '/' && !hash.includes('reset-password')) {
+        navigate(AppRoute.RESET_PASSWORD);
+      }
+    }
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
   return (
     <Routes>
       {/* 1. HOME PÚBLICA (Landing Page) */}
