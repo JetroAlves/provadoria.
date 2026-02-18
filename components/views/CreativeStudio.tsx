@@ -227,7 +227,8 @@ const CreativeStudio: React.FC = () => {
           const isLeft = ann.side === 'left';
           const x = ann.x * canvas.width;
           const y = ann.y * canvas.height;
-          const labelX = isLeft ? 0.05 * canvas.width : 0.95 * canvas.width;
+          const labelMargin = 0.05 * canvas.width; // 5% de margem
+          const labelX = isLeft ? labelMargin : canvas.width - labelMargin;
 
           // Draw Line
           ctx.beginPath();
@@ -235,29 +236,31 @@ const CreativeStudio: React.FC = () => {
           ctx.lineTo(x, y);
           ctx.strokeStyle = 'black';
           ctx.lineWidth = 2;
-          ctx.globalAlpha = 0.4;
+          ctx.globalAlpha = 0.2;
           ctx.stroke();
 
           // Draw Point
           ctx.beginPath();
           ctx.arc(x, y, 6, 0, Math.PI * 2);
           ctx.fillStyle = 'black';
-          ctx.globalAlpha = 1;
+          ctx.globalAlpha = 0.6;
           ctx.fill();
 
           // Draw Text
           ctx.font = 'bold 24px Inter, sans-serif';
           ctx.textAlign = isLeft ? 'left' : 'right';
           ctx.fillStyle = 'black';
+          ctx.globalAlpha = 1;
 
-          // Background for text
           const text = ann.product.name.toUpperCase();
           const price = `R$ ${ann.product.price.toLocaleString('pt-BR')}`;
 
-          ctx.fillText(text, labelX, y - 10);
+          const textX = isLeft ? 0.02 * canvas.width : canvas.width - 0.02 * canvas.width;
+
+          ctx.fillText(text, textX, y - 10);
           ctx.font = '20px Inter, sans-serif';
           ctx.fillStyle = '#64748b'; // slate-500
-          ctx.fillText(price, labelX, y + 25);
+          ctx.fillText(price, textX, y + 25);
         });
 
         resolve(canvas.toDataURL('image/png'));

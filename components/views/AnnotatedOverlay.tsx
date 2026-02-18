@@ -52,7 +52,8 @@ const AnnotatedOverlay: React.FC<AnnotatedOverlayProps> = ({ products }) => {
 
                 {annotations.map((ann, i) => {
                     const isLeft = ann.side === 'left';
-                    const startX = isLeft ? 10 : 90; // Label anchor
+                    const labelMargin = 5; // Margin in % from the edge
+                    const startX = isLeft ? labelMargin : (100 - labelMargin);
                     const endX = ann.x; // Point to item
 
                     return (
@@ -63,10 +64,10 @@ const AnnotatedOverlay: React.FC<AnnotatedOverlayProps> = ({ products }) => {
                                 x2={`${endX}%`}
                                 y2={`${ann.y}%`}
                                 stroke="black"
-                                strokeWidth="0.5"
-                                strokeOpacity="0.3"
+                                strokeWidth="0.8"
+                                strokeOpacity="0.2"
                             />
-                            <circle cx={`${endX}%`} cy={`${ann.y}%`} r="2" fill="black" />
+                            <circle cx={`${endX}%`} cy={`${ann.y}%`} r="3" fill="black" fillOpacity="0.6" />
                         </g>
                     );
                 })}
@@ -84,6 +85,7 @@ const AnnotatedOverlay: React.FC<AnnotatedOverlayProps> = ({ products }) => {
                             transform: 'translateY(-50%)',
                             textAlign: isLeft ? 'left' : 'right',
                             alignItems: isLeft ? 'flex-start' : 'flex-end',
+                            maxWidth: '35%' // Garante que o texto não "atravesse" a modelo
                         }}
                     >
                         <p className="text-[10px] font-black uppercase tracking-widest text-black bg-white/80 backdrop-blur-sm px-2 py-0.5 rounded-sm shadow-sm ring-1 ring-black/5">
