@@ -66,34 +66,41 @@ const AuthLoadingScreen = () => (
 
 const AppContent: React.FC = () => {
   const navigate = useNavigate();
-  const [isRecovering, setIsRecovering] = React.useState(false);
+  // Inicialização síncrona para capturar o estado ANTES do primeiro render
+  const [isRecovering, setIsRecovering] = React.useState(() => {
+    const hash = window.location.hash;
+    return hash.includes('type=recovery') || hash.includes('access_token=');
+  });
 
   useEffect(() => {
-    // Verificar se há tokens de recuperação na URL antes de qualquer redirecionamento do router
-    const hash = window.location.hash;
-    const isRecovery = hash.includes('type=recovery') || hash.includes('access_token=');
-
-    if (isRecovery) {
-      setIsRecovering(true);
-      // Pequeno delay para garantir que o Supabase processe o hash
-      setTimeout(() => {
-        navigate(AppRoute.RESET_PASSWORD);
-        setIsRecovering(false);
-      }, 1000);
-    }
-
+    // Escutar mudanças de estado do Supabase
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') {
         setIsRecovering(true);
         navigate(AppRoute.RESET_PASSWORD);
-        // Remove o estado de carregamento após a navegação
-        setTimeout(() => setIsRecovering(false), 500);
+        setTimeout(() => setIsRecovering(false), 800);
       }
     });
 
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+    // Fallback: Se inicializamos como recovering mas o evento não disparou após 2s
+    if (isRecovering) {
+      const timer = setTimeout(() => {
+        if (window.location.hash.includes('access_token')) {
+          navigate(AppRoute.RESET_PASSWORD);
+        }
+        setIsRecovering(false);
+      }, 2000);
+      return () => {
+        clearTimeout(timer);
+        subscription.unsubscribe();
+      };
+    }
 
+    return () => subscription.unsubscribe();
+  }, [navigate, isRecovering]);
+
+  // CRÍTICO: Bloqueia a renderização das rotas se estivermos em recuperação
+  // Isso impede que o wildcard '*' da Landing Page apague os tokens da URL
   if (isRecovering) return <AuthLoadingScreen />;
 
   return (
