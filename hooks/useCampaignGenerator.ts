@@ -183,10 +183,12 @@ export const useCampaignGenerator = () => {
         imgIndex++;
       }
 
-      promptBuilder += `\nINSTRUCTIONS:
+      promptBuilder += `\nSTRICT FIDELITY INSTRUCTIONS:
       - Create a coherent high-fashion editorial image.
-      - The model is wearing ALL the listed garments simultaneously.
-      - Lighting: Cinematic, consistent with the scene.
+      - PIXEL-PERFECT PRODUCT PRESERVATION: The model is wearing ALL the listed garments.
+      - ZERO TOLERANCE: Do NOT change colors, textures, materials, or structural details (buttons, seams, labels) of any source garment.
+      - MAINTAIN 100% IDENTITY: Ensure the product is recognizably identical to the source image provided.
+      - Lighting: Cinematic, consistent with the scene, but must not distort product color integrity.
       - Composition: ${state.format === '9:16' ? 'Full body vertical' : 'Editorial framing'}.
       - Quality: Photorealistic, 8K, Vogue Magazine style.
       ${isChildModel ? '- SAFETY: Ensure the image complies with child safety guidelines. Modest pose, innocent expression, age-appropriate environment.' : ''}

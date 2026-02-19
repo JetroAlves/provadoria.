@@ -146,9 +146,16 @@ const ProductShowcase: React.FC = () => {
       const mimeType = originalImage.split(',')[0].split(':')[1].split(';')[0];
 
       const prompt = `
-        TASK: Generate a professional "Ghost Mannequin" (invisible mannequin) product image.
-        INPUT: The provided image of a person wearing a garment.
-        STRICT RULES: REMOVE THE MODEL COMPLETELY. Background: Pure white. High fidelity.
+        TASK: PIXEL-PERFECT GHOST MANNEQUIN ISOLATION.
+        INPUT: [IMAGE 1] - A person wearing a garment.
+        STRICT RULES:
+        1. REMOVE THE MODEL COMPLETELY (Ghost Mannequin effect).
+        2. BACKGROUND: Pure solid white (#FFFFFF).
+        3. ZERO ALTERATIONS: The garment MUST BE 100% IDENTICAL to the original.
+           - DO NOT change textures, shadows, folds, colors, or materials.
+           - DO NOT "fix" or "invent" parts of the garment.
+           - Preserve every button, seam, and stitch exactly as seen in the source.
+        4. HIGHEST FIDELITY: Ensure the output represents the physical product with absolute accuracy for commercial use.
       `;
 
       const response = await apiService.generateImage({

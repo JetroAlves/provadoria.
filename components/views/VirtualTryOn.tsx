@@ -130,7 +130,7 @@ const VirtualTryOn: React.FC = () => {
 
       const imagesParts: any[] = [clientMedia];
 
-      let promptDescription = `TASK: HYPER-REALISTIC SIMULTANEOUS VIRTUAL TRY-ON.
+      let promptDescription = `TASK: PIXEL-PERFECT VIRTUAL TRY-ON. ABSOLUTE PRODUCT FIDELITY REQUIRED.
       INPUTS:
       - IMAGE 1: The Client (Target Body). Preserve facial identity, skin tone, hair, and pose exactly.
       `;
@@ -143,22 +143,20 @@ const VirtualTryOn: React.FC = () => {
         const prodMedia = await apiService.urlToBase64(product.image);
         imagesParts.push(prodMedia);
 
-        promptDescription += `- IMAGE ${imgIndex}: ${slot.toUpperCase()} GARMENT ("${product.name}"). Apply this item to the client.\n`;
+        promptDescription += `- IMAGE ${imgIndex}: ${slot.toUpperCase()} GARMENT ("${product.name}"). This is the SOURCE OF TRUTH for this item.\n`;
         imgIndex++;
       }
 
       promptDescription += `
-      INSTRUCTIONS:
-      1. Generate A SINGLE final image where the client is wearing ALL the provided garments AT ONCE.
-      2. LOGIC:
-         - If TOP + BOTTOM are provided, tuck them naturally or layer them based on standard fashion rules.
-         - If SHOES are provided, replace the client's footwear.
-         - If ACCESSORIES are provided, place them correctly (e.g., bag in hand/shoulder).
-      3. FIDELITY:
-         - Maintain the EXACT texture, print, and material of all product images.
-         - Adapt the fit realistically to the client's body shape and pose.
-         - Do NOT generate multiple images. Synthesize the complete look in one shot.
-      4. LIGHTING: Match the lighting of the new garments to the client's original environment.
+      STRICT INSTRUCTIONS:
+      1. Generate A SINGLE final image where the client is wearing ALL provided garments.
+      2. ZERO TOLERANCE FOR ALTERATIONS: Maintain 100% fidelity to the garments in the source images. 
+         - DO NOT change colors, textures, prints, or patterns.
+         - DO NOT add/remove buttons, zippers, collars, or seams.
+         - DO NOT simplify or "hallucinate" any part of the garment.
+      3. REALISTIC FIT: Adapt the garment to the client's body shape and pose naturally, but DO NOT distort the design of the product.
+      4. LIGHTING: Match the environmental lighting while preserving the product's original color integrity.
+      5. COMPOSITION: Synthesize everything into one high-resolution, photorealistic shot.
       `;
 
       setGenerationStep('Renderizando Composição Final...');
@@ -410,8 +408,8 @@ const VirtualTryOn: React.FC = () => {
                     key={p.id}
                     onClick={() => selectProduct(p)}
                     className={`w-full flex items-center gap-3 p-2 rounded-2xl border-2 transition-all text-left group ${isSelected
-                        ? 'border-indigo-600 bg-indigo-50 shadow-sm'
-                        : 'border-transparent hover:border-slate-100 hover:bg-slate-50'
+                      ? 'border-indigo-600 bg-indigo-50 shadow-sm'
+                      : 'border-transparent hover:border-slate-100 hover:bg-slate-50'
                       }`}
                   >
                     <div className="w-10 h-12 rounded-xl overflow-hidden bg-white shrink-0 border border-slate-100">
