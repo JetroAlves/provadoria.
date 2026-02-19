@@ -148,13 +148,27 @@ export const generateImage = async (
     config.imageConfig.imageSize = "1K";
   }
 
-  const response = await ai.models.generateContent({
-    model,
-    contents: { parts },
-    config
-  });
+  let response;
+  try {
+    response = await ai.models.generateContent({
+      model,
+      contents: { parts },
+      config
+    });
+  } catch (err: any) {
+    if (useProModel && (err.message.includes('503') || err.message.includes('high demand') || err.message.includes('UNAVAILABLE'))) {
+      console.warn("Pro model under high demand, falling back to standard model...");
+      response = await ai.models.generateContent({
+        model: MODELS.image,
+        contents: { parts },
+        config: { imageConfig: { aspectRatio } }
+      });
+    } else {
+      throw err;
+    }
+  }
 
-  const part = response.candidates?.[0]?.content?.parts.find(p => p.inlineData);
+  const part = response.candidates?.[0]?.content?.parts.find((p: any) => p.inlineData);
   if (!part?.inlineData) {
     throw new Error("Nenhuma imagem gerada.");
   }

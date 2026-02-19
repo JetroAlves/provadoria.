@@ -87,11 +87,19 @@ export default async function handler(req: any, res: any) {
     } catch (error: any) {
         console.error("Gemini API error (Text):", error);
 
-        const statusCode = error.message.includes('Créditos insuficientes') ? 403 : 500;
+        let errorMessage = error.message || "Internal server error";
+        let statusCode = 500;
+
+        if (errorMessage.includes('503') || errorMessage.includes('high demand') || errorMessage.includes('UNAVAILABLE')) {
+            statusCode = 503;
+            errorMessage = "O serviço de IA está temporariamente indisponível devido à alta demanda. Tente novamente em alguns instantes.";
+        } else if (errorMessage.includes('Créditos insuficientes')) {
+            statusCode = 403;
+        }
 
         return res.status(statusCode).json({
             success: false,
-            error: error.message || "Internal server error"
+            error: errorMessage
         });
     }
 }

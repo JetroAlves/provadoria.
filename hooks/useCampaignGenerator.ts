@@ -205,7 +205,7 @@ export const useCampaignGenerator = () => {
 
     } catch (err: any) {
       console.error(err);
-      setError('Erro ao gerar campanha. Verifique se o plano permite uso intensivo de tokens.');
+      setError(err.message || 'Erro ao gerar campanha. Verifique se o plano permite uso intensivo de tokens.');
     } finally {
       setIsGenerating(false);
     }
