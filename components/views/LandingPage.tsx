@@ -12,7 +12,8 @@ import {
   Loader2,
   CheckCircle2,
   Check,
-  Instagram
+  Instagram,
+  MessageCircle
 } from 'lucide-react';
 import { AppRoute } from '../../types';
 import { useAuth } from '../../context/AuthContext';
@@ -508,6 +509,20 @@ const LandingPage: React.FC = () => {
           </div>
         </div>
       </footer>
+
+      {/* WhatsApp Support Button */}
+      <a
+        href="https://wa.me/5581973128189"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-8 right-8 z-[200] bg-[#25D366] text-white p-4 rounded-full shadow-[0_10px_40px_-10px_rgba(37,211,102,0.5)] hover:bg-[#20ba5a] hover:scale-110 transition-all active:scale-95 group flex items-center gap-3"
+        aria-label="Suporte via WhatsApp"
+      >
+        <span className="max-w-0 overflow-hidden whitespace-nowrap font-bold text-[10px] uppercase tracking-widest group-hover:max-w-xs transition-all duration-500">
+          Suporte
+        </span>
+        <MessageCircle size={24} fill="currentColor" />
+      </a>
     </div>
   );
 };
