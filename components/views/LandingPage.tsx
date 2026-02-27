@@ -271,8 +271,8 @@ const LandingPage: React.FC = () => {
       <section className="py-32 px-6 border-b border-slate-50">
         <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-16">
           {[
-            { val: '+250', label: 'Marcas Ativas' },
-            { val: '1M+', label: 'Fotos Geradas' },
+            { val: '+26', label: 'Marcas Ativas' },
+            { val: '2k+', label: 'Fotos Geradas' },
             { val: '-85%', label: 'Custo de Produção' },
             { val: '3.4x', label: 'Conversão Média' }
           ].map((s, i) => (
@@ -496,10 +496,10 @@ const LandingPage: React.FC = () => {
               Privacidade
             </button>
             <button
-              onClick={() => window.open('https://instagram.com/provadoria', '_blank')}
+              onClick={() => window.open('https://instagram.com/provadoria.com.br', '_blank')}
               className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-black transition-colors"
             >
-              <Instagram size={14} /> Instagram
+              <Instagram size={14} /> @provadoria.com.br
             </button>
           </div>
 
